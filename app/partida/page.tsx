@@ -44,8 +44,7 @@ function PartidaContent() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setPuzzle(data);
-      const todas = data.grupos.flatMap((g) => g.palabras);
-      setPalabras(todas.sort(() => Math.random() - 0.5));
+const todas = data.grupos.flatMap((g: { palabras: string[] }) => g.palabras);      setPalabras(todas.sort(() => Math.random() - 0.5));
     } catch (e) {
       setError("Error al generar el puzzle. Intenta de nuevo.");
     } finally {
