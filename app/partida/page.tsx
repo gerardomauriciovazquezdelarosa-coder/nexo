@@ -52,7 +52,7 @@ const todas = data.grupos.flatMap((g: { palabras: string[] }) => g.palabras);   
     }
   };
 
-  const togglePalabra = (p) => {
+const togglePalabra = (p: string) => {
     if (juegoTerminado) return;
     if (seleccionadas.includes(p)) {
       setSeleccionadas(seleccionadas.filter((x) => x !== p));
