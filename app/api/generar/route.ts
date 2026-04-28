@@ -12,20 +12,12 @@ export async function POST(request: NextRequest) {
     const prompt = `Eres un experto en trivia y puzzles educativos en español. Crea un puzzle tipo "Connections" sobre: "${tema}" con dificultad: ${dificultad}.
 
 REGLAS CRÍTICAS:
-- Usa SOLO datos 100% verídicos y verificables (nombres reales, fechas correctas, hechos comprobados)
+- Usa la herramienta de búsqueda web para verificar TODOS los datos antes de incluirlos
+- Solo incluye datos que hayas verificado — nunca inventes ni supongas hechos
 - Las 16 palabras deben ser completamente únicas — NUNCA repitas la misma palabra dos veces
-- Antes de responder, verifica que ninguna palabra aparece más de una vez en todo el puzzle
-- REGLA MÁS IMPORTANTE: Cada palabra debe pertenecer ÚNICAMENTE a su grupo y a ningún otro. Si una palabra podría encajar en dos grupos diferentes, cámbiala por otra más específica
-- Las categorías deben ser mutuamente excluyentes — ninguna palabra de un grupo puede pertenecer lógicamente a otro grupo
-- Evita categorías amplias como "países campeones" si hay palabras en otros grupos que también son campeones
-- Sé muy específico en las categorías para evitar ambigüedad (ej: "Países campeones SOLO en los años 30-40" en lugar de "Países campeones")
+- Cada palabra debe pertenecer ÚNICAMENTE a su grupo — las categorías deben ser mutuamente excluyentes
+- Sé muy específico en las categorías para evitar ambigüedad
 - Dificultad "${dificultad}": ${dificultad === "fácil" ? "conexiones obvias y palabras conocidas" : dificultad === "medio" ? "conexiones que requieren algo de conocimiento" : "conexiones sutiles o poco conocidas"}
-
-EJEMPLO DE PUZZLE BIEN CONSTRUIDO (categorías que no se solapan):
-- "Máximos goleadores históricos del Mundial": Klose, Ronaldo, Fontaine, Müller
-- "Sedes del Mundial en Asia": Japón, Corea, Qatar, Arabia
-- "Países que ganaron su primer Mundial después del 2000": España, Francia, Alemania, Argentina
-- "Porteros legendarios de Mundiales": Buffon, Yashin, Banks, Zoff
 
 Responde SOLO con este JSON válido, sin texto adicional:
 {
@@ -42,21 +34,30 @@ Responde SOLO con este JSON válido, sin texto adicional:
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      max_tokens: 4000,
+      tools: [
+        {
+          type: "web_search_20250305",
+          name: "web_search",
+        } as Parameters<typeof client.messages.create>[0]["tools"][0],
+      ],
       messages: [{ role: "user", content: prompt }],
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") throw new Error("Error");
+    // Extraer el texto final de la respuesta (puede venir después de búsquedas)
+    const textBlock = message.content.findLast((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") throw new Error("Error");
 
-    const text = content.text;
+    const text = textBlock.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
 
     const puzzle = JSON.parse(jsonMatch[0]);
 
     // Verificar que no haya palabras duplicadas
-    const todasLasPalabras = puzzle.grupos.flatMap((g: { palabras: string[] }) => g.palabras);
+    const todasLasPalabras = puzzle.grupos.flatMap(
+      (g: { palabras: string[] }) => g.palabras
+    );
     const unicas = new Set(todasLasPalabras);
     if (unicas.size !== 16) {
       return NextResponse.json({ error: "Error al generar" }, { status: 500 });
