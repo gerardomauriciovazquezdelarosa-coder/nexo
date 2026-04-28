@@ -13,23 +13,58 @@ export async function POST(request: NextRequest) {
 
 REGLAS CRÍTICAS:
 - Usa SOLO datos 100% verídicos y verificables (nombres reales, fechas correctas, hechos comprobados)
-- Si el tema involucra campeones, ganadores, récords o fechas — usa los datos reales exactos
-- Las 16 palabras deben ser específicas y concretas, NO genéricas
-- NUNCA repitas la misma palabra dos veces — las 16 palabras deben ser completamente únicas y distintas entre sí
-- Antes de responder, verifica mentalmente que ninguna palabra aparece más de una vez
-- Cada grupo debe tener una conexión clara y precisa entre sus 4 palabras
-- Las palabras deben ser reconocibles para un hispanohablante promedio
+- Las 16 palabras deben ser completamente únicas — NUNCA repitas la misma palabra dos veces
+- Antes de responder, verifica que ninguna palabra aparece más de una vez en todo el puzzle
+- REGLA MÁS IMPORTANTE: Cada palabra debe pertenecer ÚNICAMENTE a su grupo y a ningún otro. Si una palabra podría encajar en dos grupos diferentes, cámbiala por otra más específica
+- Las categorías deben ser mutuamente excluyentes — ninguna palabra de un grupo puede pertenecer lógicamente a otro grupo
+- Evita categorías amplias como "países campeones" si hay palabras en otros grupos que también son campeones
+- Sé muy específico en las categorías para evitar ambigüedad (ej: "Países campeones SOLO en los años 30-40" en lugar de "Países campeones")
 - Dificultad "${dificultad}": ${dificultad === "fácil" ? "conexiones obvias y palabras conocidas" : dificultad === "medio" ? "conexiones que requieren algo de conocimiento" : "conexiones sutiles o poco conocidas"}
 
-EJEMPLOS de grupos buenos:
-- "Países que han ganado más de 3 Mundiales": Brasil, Alemania, Italia, Argentina
-- "Capitales de América del Sur": Bogotá, Lima, Santiago, Buenos Aires
+EJEMPLO DE PUZZLE BIEN CONSTRUIDO (categorías que no se solapan):
+- "Máximos goleadores históricos del Mundial": Klose, Ronaldo, Fontaine, Müller
+- "Sedes del Mundial en Asia": Japón, Corea, Qatar, Arabia
+- "Países que ganaron su primer Mundial después del 2000": España, Francia, Alemania, Argentina
+- "Porteros legendarios de Mundiales": Buffon, Yashin, Banks, Zoff
 
 Responde SOLO con este JSON válido, sin texto adicional:
 {
   "tema": "nombre del tema",
   "dificultad": "${dificultad}",
   "grupos": [
-    {"categoria": "nombre categoria", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#22c55e", "emoji": "🟢"},
-    {"categoria": "nombre categoria", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#3b82f6", "emoji": "🔵"},
-    {"categoria": "nombre categoria", "palabras": ["palabra1","palabra2","pal
+    {"categoria": "nombre categoria muy específica", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#22c55e", "emoji": "🟢"},
+    {"categoria": "nombre categoria muy específica", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#3b82f6", "emoji": "🔵"},
+    {"categoria": "nombre categoria muy específica", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#f59e0b", "emoji": "🟡"},
+    {"categoria": "nombre categoria muy específica", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#ef4444", "emoji": "🔴"}
+  ],
+  "pistas": ["pista general 1", "pista general 2", "pista general 3"]
+}`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const content = message.content[0];
+    if (content.type !== "text") throw new Error("Error");
+
+    const text = content.text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON");
+
+    const puzzle = JSON.parse(jsonMatch[0]);
+
+    // Verificar que no haya palabras duplicadas
+    const todasLasPalabras = puzzle.grupos.flatMap((g: { palabras: string[] }) => g.palabras);
+    const unicas = new Set(todasLasPalabras);
+    if (unicas.size !== 16) {
+      return NextResponse.json({ error: "Error al generar" }, { status: 500 });
+    }
+
+    return NextResponse.json(puzzle);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Error al generar" }, { status: 500 });
+  }
+}
