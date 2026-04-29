@@ -9,80 +9,31 @@ export async function POST(request: NextRequest) {
   try {
     const { tema, dificultad } = await request.json();
 
-    // PASO 1: Buscar y verificar datos reales sobre el tema
-    const busqueda = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2000,
-      tools: [
-        {
-          type: "web_search_20250305",
-          name: "web_search",
-        } as Parameters<typeof client.messages.create>[0]["tools"][0],
-      ],
-      messages: [
-        {
-          role: "user",
-          content: `Busca en internet información factual y verificada sobre: "${tema}". 
-Necesito datos concretos y 100% verídicos para crear un puzzle educativo.
-Busca al menos 3 veces con diferentes consultas para obtener datos variados.
-Lista todos los datos verificados que encuentres, organizados por categorías posibles.
-NO inventes nada — solo incluye lo que encuentres en fuentes reales.`,
-        },
-      ],
-    });
-
-    const datosVerificados = busqueda.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b.type === "text" ? b.text : ""))
-      .join("\n");
-
-    // PASO 2: Generar el puzzle con dificultad bien definida
     const nivelInstrucciones = {
-      fácil: `
-NIVEL FÁCIL — Para niños y personas con poco conocimiento del tema:
-- Usa palabras y nombres muy conocidos por cualquier persona
-- Las categorías deben ser obvias y directas (ej: "Colores", "Animales domésticos")
-- La conexión entre las palabras debe ser inmediatamente visible
-- Evita datos históricos específicos, fechas o estadísticas
-- Ejemplo bueno: "Cosas que son redondas": pelota, luna, naranja, rueda`,
-      medio: `
-NIVEL MEDIO — Para personas con conocimiento general del tema:
-- Usa nombres y datos que requieren algo de estudio o interés en el tema
-- Las categorías deben tener conexiones que no son inmediatamente obvias
-- Mezcla datos conocidos con algunos menos conocidos
-- Puede incluir fechas importantes, récords o datos específicos pero populares
-- Ejemplo bueno: "Países que han ganado el Mundial más de 3 veces": Brasil, Alemania, Italia, Argentina`,
-      difícil: `
-NIVEL DIFÍCIL — Para expertos o fanáticos del tema:
-- Usa datos muy específicos que solo conoce alguien que estudió el tema a fondo
-- Las categorías deben ser sutiles y no obvias — pueden parecer que se solapan pero no
-- Usa datos poco conocidos: récords específicos, años exactos, datos estadísticos precisos
-- Las palabras deben ser correctas pero poco evidentes como grupo
-- Ejemplo bueno: "Jugadores con más de 15 goles en Mundiales": Klose, Ronaldo, Müller, Fontaine
-- Otro ejemplo: "Países eliminados en semifinales en 3 Mundiales consecutivos": Holanda, Francia, Alemania, Brasil`,
+      fácil: "conexiones muy obvias y palabras conocidas por cualquier persona, incluso niños",
+      medio: "conexiones que requieren conocimiento general del tema",
+      difícil: "conexiones sutiles y datos muy específicos que solo conoce un experto",
     };
 
-    const instruccion = nivelInstrucciones[dificultad as keyof typeof nivelInstrucciones] || nivelInstrucciones["medio"];
+    const nivel = nivelInstrucciones[dificultad as keyof typeof nivelInstrucciones] || nivelInstrucciones["medio"];
 
-    const puzzle_response = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1500,
-      messages: [
-        {
-          role: "user",
-          content: `Usando ÚNICAMENTE estos datos verificados de internet:
+    const prompt = `Eres un experto en trivia y puzzles educativos en español con acceso a información verificada.
 
-${datosVerificados}
+Crea un puzzle tipo "Connections" sobre: "${tema}" con dificultad: ${dificultad} (${nivel}).
 
-Crea un puzzle tipo "Connections" sobre "${tema}".
+REGLAS CRÍTICAS:
+1. USA SOLO datos 100% verídicos — si no estás seguro de un dato, no lo uses
+2. Las 16 palabras deben ser completamente ÚNICAS — nunca repitas ninguna
+3. Las categorías deben ser MUTUAMENTE EXCLUYENTES — ninguna palabra puede pertenecer lógicamente a dos grupos
+4. Si una palabra podría encajar en dos grupos, cámbiala por otra más específica
+5. Las categorías deben tener nombres muy específicos para evitar ambigüedad
+6. Para nivel DIFÍCIL: usa datos muy específicos como años exactos, récords precisos, datos estadísticos — NO uses categorías genéricas
+7. Para nivel FÁCIL: usa palabras y conexiones que cualquier niño pueda entender
 
-${instruccion}
-
-REGLAS GENERALES:
-- Usa SOLO datos que aparecen en la información verificada de arriba — NO agregues nada de tu memoria
-- Las 16 palabras deben ser completamente únicas — NUNCA repitas la misma palabra
-- Las categorías deben ser mutuamente excluyentes — ninguna palabra puede pertenecer a dos grupos
-- Sé muy específico en los nombres de categorías para evitar ambigüedad
+VERIFICA antes de responder:
+- ¿Todas las palabras son 100% correctas y verificables?
+- ¿Hay alguna palabra duplicada?
+- ¿Podría alguna palabra pertenecer a más de un grupo?
 
 Responde SOLO con este JSON válido, sin texto adicional:
 {
@@ -95,15 +46,18 @@ Responde SOLO con este JSON válido, sin texto adicional:
     {"categoria": "nombre categoria muy específica", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#ef4444", "emoji": "🔴"}
   ],
   "pistas": ["pista general 1", "pista general 2", "pista general 3"]
-}`,
-        },
-      ],
+}`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const textBlock = puzzle_response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") throw new Error("Error");
+    const content = message.content[0];
+    if (content.type !== "text") throw new Error("Error");
 
-    const text = textBlock.text;
+    const text = content.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
 
