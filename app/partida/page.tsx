@@ -94,7 +94,7 @@ function PartidaContent() {
       setPalabras(palabras.filter((p) => !seleccionadas.includes(p)));
       setSeleccionadas([]);
       setMensaje("✅ Correcto: " + grupo.categoria);
-      setTimeout(() => setMensaje(""), 2000);
+      setTimeout(() => setMensaje(""), 3000);
       if (nr.length === 4) {
         setGano(true);
         setJuegoTerminado(true);
@@ -108,7 +108,7 @@ function PartidaContent() {
         setGano(false);
       } else {
         setMensaje("❌ Incorrecto. Quedan " + ni + " intentos");
-        setTimeout(() => setMensaje(""), 2000);
+        setTimeout(() => setMensaje(""), 3000);
       }
     }
   };
@@ -117,137 +117,9 @@ function PartidaContent() {
     if (pistasUsadas >= 3 || !puzzle) return;
     setMensaje("💡 Pista: " + puzzle.pistas[pistasUsadas]);
     setPistasUsadas(pistasUsadas + 1);
-    setTimeout(() => setMensaje(""), 4000);
+    setTimeout(() => setMensaje(""), 10000);
   };
 
   if (loading)
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-6xl mb-6 animate-bounce">
-            {MENSAJES_CARGA[mensajeCarga].emoji}
-          </div>
-          <h2 className="text-xl font-semibold mb-2">
-            {MENSAJES_CARGA[mensajeCarga].texto}
-          </h2>
-          <p className="text-gray-400 mb-6">{tema}</p>
-          <div className="flex gap-1 justify-center">
-            {MENSAJES_CARGA.map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-all duration-500 ${
-                  i === mensajeCarga ? "bg-white scale-125" : "bg-gray-700"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </main>
-    );
-
-  if (error)
-    return (
-      <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-5xl mb-4">❌</div>
-          <p className="text-red-400 mb-4">{error}</p>
-          <button
-            onClick={generarPuzzle}
-            className="bg-white text-gray-950 px-6 py-3 rounded-xl font-semibold"
-          >
-            Reintentar
-          </button>
-        </div>
-      </main>
-    );
-
-  return (
-    <main className="min-h-screen bg-gray-950 text-white p-4">
-      <div className="max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-4 pt-4">
-          <button
-            onClick={() => router.push("/jugar")}
-            className="text-gray-400 hover:text-white"
-          >
-            ←
-          </button>
-          <div className="text-center">
-            <div className="font-semibold">{tema}</div>
-            <div className="text-gray-400 text-sm">{dificultad}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-400">Intentos</div>
-            <div className="font-bold">{intentos}/4</div>
-          </div>
-        </div>
-
-        {gruposResueltos.map((g, i) => (
-          <div
-            key={i}
-            className="rounded-xl p-3 mb-2 text-center"
-            style={{ backgroundColor: g.color }}
-          >
-            <div className="font-bold text-white text-sm">
-              {g.emoji} {g.categoria}
-            </div>
-            <div className="text-white text-xs opacity-80">
-              {g.palabras.join(" · ")}
-            </div>
-          </div>
-        ))}
-
-        {!juegoTerminado && (
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            {palabras.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => togglePalabra(p)}
-                className={
-                  "py-3 px-1 rounded-xl text-xs font-semibold text-center leading-tight " +
-                  (seleccionadas.includes(p)
-                    ? "bg-white text-gray-950 scale-95"
-                    : "bg-gray-800 text-white hover:bg-gray-700")
-                }
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {juegoTerminado && !gano && puzzle && (
-          <div className="space-y-2 mb-4">
-            {puzzle.grupos
-              .filter(
-                (g) => !gruposResueltos.find((r) => r.categoria === g.categoria)
-              )
-              .map((g, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl p-3 text-center opacity-60"
-                  style={{ backgroundColor: g.color }}
-                >
-                  <div className="font-bold text-white text-sm">
-                    {g.emoji} {g.categoria}
-                  </div>
-                  <div className="text-white text-xs">
-                    {g.palabras.join(" · ")}
-                  </div>
-                </div>
-              ))}
-          </div>
-        )}
-
-        {mensaje && (
-          <div className="bg-gray-800 rounded-xl p-3 mb-4 text-center text-sm">
-            {mensaje}
-          </div>
-        )}
-
-        {!juegoTerminado ? (
-          <div className="space-y-2">
-            <button
-              onClick={verificar}
-              disabled={seleccionadas.length !== 4}
-              className={
-                "w-full
+      <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4"></main>
