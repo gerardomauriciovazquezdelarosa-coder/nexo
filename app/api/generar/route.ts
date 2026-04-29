@@ -11,52 +11,57 @@ export async function POST(request: NextRequest) {
   try {
     const { tema, dificultad } = await request.json();
 
-    const prompt = `Eres el diseñador de puzzles más creativo e inteligente del mundo hispanohablante. Tu especialidad es crear puzzles tipo "Connections" que producen el efecto "¡ah, claro!" — donde la conexión es sorprendente al principio pero perfectamente obvia una vez descubierta.
+    const prompt = `Eres el mejor diseñador de puzzles educativos en español. Crea un puzzle tipo "Connections" sobre "${tema}" nivel ${dificultad}.
 
-TEMA: "${tema}"
-NIVEL: ${dificultad}
+PRINCIPIO FUNDAMENTAL DEL PUZZLE:
+Las 4 palabras de cada grupo son ejemplos concretos y conocidos de un concepto más amplio. El jugador debe descubrir ese concepto. La satisfacción viene de ir de lo concreto a lo abstracto.
 
-FILOSOFÍA DEL BUEN PUZZLE:
-Una categoría excelente tiene TRES propiedades simultáneas:
-1. Es ESPECÍFICA: "Animales que aparecen en billetes mexicanos" es mejor que "Animales famosos"
-2. Es IRREBATIBLE: cada palabra pertenece al grupo por exactamente la misma razón, sin excepciones ni "casi"
-3. Produce el efecto "¡AH, CLARO!": cuando el jugador descubre la conexión, la reconoce como elegante y justa
+EJEMPLOS DE CÓMO FUNCIONA ESTE PRINCIPIO:
 
-EJEMPLOS DE CATEGORÍAS EXCELENTES vs MALAS:
-❌ MALA: "Animales grandes" — subjetivo, discutible, aburrido
-✅ BUENA: "Animales que aparecen en el escudo nacional de México" — específico, irrebatible, sorprendente
+Tema "Animales", nivel fácil:
+- Grupo: Perro, Gato, Conejo, Hámster → categoría: "Animales que se tienen como mascotas"
+- Grupo: León, Tigre, Cocodrilo, Lobo → categoría: "Animales depredadores salvajes"
+- Grupo: Ballena, Tiburón, Pulpo, Delfín → categoría: "Animales que viven en el océano"
+- Grupo: Águila, Loro, Paloma, Pingüino → categoría: "Animales que tienen plumas"
 
-❌ MALA: "Animales rápidos" — ¿rápidos comparado con qué?
-✅ BUENA: "Animales más rápidos que un auto en autopista (>120 km/h)" — específico, verificable, produce asombro
+Tema "Grandes pensadores", nivel difícil:
+- Grupo: Sócrates, Platón, Aristóteles, Epicuro → categoría: "Filósofos de la Grecia antigua"
+- Grupo: Da Vinci, Miguel Ángel, Rafael, Botticelli → categoría: "Pintores del Renacimiento italiano"
+- Grupo: Napoleón, Alejandro, César, Gengis → categoría: "Conquistadores militares de imperios"
+- Grupo: Shakespeare, Cervantes, Dante, Homero → categoría: "Escritores fundadores de su idioma"
 
-❌ MALA: "Animales del mar" — demasiado obvia, no hay descubrimiento
-✅ BUENA: "Animales marinos que pueden matar a un humano" — tiene tensión, es sorprendente, es irrebatible
-
-❌ MALA: "Cosas relacionadas con el espacio" — demasiado amplia
-✅ BUENA: "Objetos que han estado en la Luna" — específico, sorprendente, irrebatible
+Tema "Historia de México", nivel medio:
+- Grupo: Hidalgo, Morelos, Guerrero, Allende → categoría: "Héroes de la Independencia mexicana"
+- Grupo: Tenochtitlán, Chichén Itzá, Palenque, Teotihuacán → categoría: "Ciudades del México prehispánico"
+- Grupo: Oaxaca, Jalisco, Veracruz, Michoacán → categoría: "Estados con gastronomía reconocida mundialmente"
+- Grupo: Diego Rivera, Frida Kahlo, José Clemente Orozco, David Siqueiros → categoría: "Muralistas mexicanos del siglo XX"
 
 REGLAS SEGÚN NIVEL:
-${dificultad === "fácil" ? `FÁCIL: Las 16 palabras deben ser conocidas por cualquier niño de primaria. Las categorías deben ser claras una vez descubiertas, pero no inmediatamente obvias. Usa palabras cotidianas: animales comunes, colores, objetos del hogar, personajes de cuentos. PROHIBIDO: nombres científicos, términos técnicos, palabras en inglés, datos históricos específicos.` : dificultad === "medio" ? `MEDIO: Las palabras son conocidas para adultos con cultura general. Las categorías requieren pensar y conocimiento moderado del tema. Puede incluir datos conocidos, personajes famosos, lugares reconocibles.` : `DIFÍCIL: Las categorías son conexiones no obvias que solo descubre alguien con conocimiento profundo del tema. Usa datos precisos, récords específicos, hechos poco conocidos pero verificables. El jugador debe sentir que aprendió algo al ver la respuesta.`}
+${dificultad === "fácil" 
+? "FÁCIL: Las 16 palabras deben ser conocidas por cualquier niño mexicano de 8 años. Usa animales comunes, objetos cotidianos, personajes de cuentos clásicos, países muy famosos, frutas, colores. PROHIBIDO: nombres científicos, términos técnicos, palabras en inglés, personajes históricos poco conocidos, récords mundiales, especies raras."
+: dificultad === "medio" 
+? "MEDIO: Las palabras son conocidas para adultos con cultura general de preparatoria. Las categorías requieren conocimiento moderado del tema. Puede incluir personajes históricos famosos, obras conocidas, datos verificables de cultura general."
+: "DIFÍCIL: Las palabras son conocidas para expertos o apasionados del tema. Las categorías son conexiones sutiles que requieren conocimiento profundo. Usa datos precisos, periodos históricos específicos, clasificaciones técnicas correctas. El jugador debe sentir que aprendió algo valioso al ver la respuesta."}
 
 REGLAS TÉCNICAS IRRENUNCIABLES:
-1. Verifica mentalmente que cada palabra pertenece a su categoría por EXACTAMENTE la misma razón que las otras tres
-2. Si una palabra "casi" encaja, NO la uses — busca una que encaje perfectamente
-3. Las 16 palabras deben ser completamente únicas — ninguna se repite
-4. Las categorías deben ser mutuamente excluyentes — ninguna palabra podría pertenecer a otro grupo
-5. Antes de responder, pregúntate: "¿Podría un jugador justo reclamar que esta palabra no pertenece aquí?" Si la respuesta es sí, cambia la palabra
-6. Usa SOLO datos 100% verídicos y verificables
+1. PROHIBIDO absolutamente usar nombres científicos en latín en ningún nivel
+2. Las 16 palabras deben ser completamente únicas — ninguna se repite
+3. Las categorías deben ser mutuamente excluyentes — ninguna palabra podría pertenecer a otro grupo
+4. Cada una de las 4 palabras debe encajar en su categoría por exactamente la misma razón
+5. Usa SOLO datos 100% verídicos — si tienes duda de un dato, no lo uses
+6. La categoría debe ser el concepto que une a las palabras, no una descripción arbitraria
 
-Responde SOLO con este JSON válido, sin texto adicional, sin markdown, sin backticks:
+Responde SOLO con JSON válido, sin markdown, sin backticks, sin texto adicional:
 {
   "tema": "nombre del tema",
   "dificultad": "${dificultad}",
   "grupos": [
-    {"categoria": "categoria muy específica e ingeniosa", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#22c55e", "emoji": "🟢"},
-    {"categoria": "categoria muy específica e ingeniosa", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#3b82f6", "emoji": "🔵"},
-    {"categoria": "categoria muy específica e ingeniosa", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#f59e0b", "emoji": "🟡"},
-    {"categoria": "categoria muy específica e ingeniosa", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#ef4444", "emoji": "🔴"}
+    {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#22c55e", "emoji": "🟢"},
+    {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#3b82f6", "emoji": "🔵"},
+    {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#f59e0b", "emoji": "🟡"},
+    {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#ef4444", "emoji": "🔴"}
   ],
-  "pistas": ["pista ingeniosa 1", "pista ingeniosa 2", "pista ingeniosa 3"]
+  "pistas": ["pista que orienta sin revelar", "pista que orienta sin revelar", "pista que orienta sin revelar"]
 }`;
 
     const message = await client.messages.create({
@@ -67,14 +72,13 @@ Responde SOLO con este JSON válido, sin texto adicional, sin markdown, sin back
 
     const content = message.content[0];
     if (content.type !== "text") {
-      return NextResponse.json({ error: "Respuesta no es texto: " + content.type }, { status: 500 });
+      return NextResponse.json({ error: "Respuesta inesperada" }, { status: 500 });
     }
 
-    const text = content.text.trim();
-    const cleanText = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    const text = content.text.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return NextResponse.json({ error: "No JSON encontrado" }, { status: 500 });
+      return NextResponse.json({ error: "No se encontró JSON" }, { status: 500 });
     }
 
     const puzzle = JSON.parse(jsonMatch[0]);
@@ -84,7 +88,7 @@ Responde SOLO con este JSON válido, sin texto adicional, sin markdown, sin back
     );
     const unicas = new Set(todasLasPalabras);
     if (unicas.size !== 16) {
-      return NextResponse.json({ error: `Solo ${unicas.size} palabras únicas de 16` }, { status: 500 });
+      return NextResponse.json({ error: `Solo ${unicas.size} palabras únicas` }, { status: 500 });
     }
 
     return NextResponse.json(puzzle);
