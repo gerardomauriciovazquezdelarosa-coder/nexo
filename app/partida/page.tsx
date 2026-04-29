@@ -2,6 +2,15 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const MENSAJES_CARGA = [
+  { emoji: "🔍", texto: "Buscando información verificada..." },
+  { emoji: "📚", texto: "Consultando fuentes confiables..." },
+  { emoji: "🧩", texto: "Construyendo tu puzzle..." },
+  { emoji: "✅", texto: "Verificando que todo sea correcto..." },
+  { emoji: "🎯", texto: "Preparando el desafío..." },
+  { emoji: "⚡", texto: "¡Casi listo!" },
+];
+
 function PartidaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,10 +27,19 @@ function PartidaContent() {
   const [mensaje, setMensaje] = useState("");
   const [juegoTerminado, setJuegoTerminado] = useState(false);
   const [gano, setGano] = useState(false);
+  const [mensajeCarga, setMensajeCarga] = useState(0);
 
   useEffect(() => {
     generarPuzzle();
   }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+    const intervalo = setInterval(() => {
+      setMensajeCarga((prev) => (prev + 1) % MENSAJES_CARGA.length);
+    }, 2500);
+    return () => clearInterval(intervalo);
+  }, [loading]);
 
   const generarPuzzle = async () => {
     setLoading(true);
@@ -35,6 +53,7 @@ function PartidaContent() {
     setGano(false);
     setPuzzle(null);
     setPalabras([]);
+    setMensajeCarga(0);
     try {
       const res = await fetch("/api/generar", {
         method: "POST",
@@ -44,8 +63,8 @@ function PartidaContent() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setPuzzle(data);
-const todas = data.grupos.flatMap((g: { palabras: string[] }) => g.palabras);
-setPalabras (todas.sort(() => Math.random() - 0.5));
+      const todas = data.grupos.flatMap((g: { palabras: string[] }) => g.palabras);
+      setPalabras(todas.sort(() => Math.random() - 0.5));
     } catch (e) {
       setError("Error al generar el puzzle. Intenta de nuevo.");
     } finally {
@@ -53,7 +72,7 @@ setPalabras (todas.sort(() => Math.random() - 0.5));
     }
   };
 
-const togglePalabra = (p: string) => {
+  const togglePalabra = (p: string) => {
     if (juegoTerminado) return;
     if (seleccionadas.includes(p)) {
       setSeleccionadas(seleccionadas.filter((x) => x !== p));
@@ -105,9 +124,23 @@ const togglePalabra = (p: string) => {
     return (
       <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-5xl mb-4">⚙️</div>
-          <h2 className="text-xl font-semibold mb-2">Generando puzzle...</h2>
-          <p className="text-gray-400">{tema}</p>
+          <div className="text-6xl mb-6 animate-bounce">
+            {MENSAJES_CARGA[mensajeCarga].emoji}
+          </div>
+          <h2 className="text-xl font-semibold mb-2">
+            {MENSAJES_CARGA[mensajeCarga].texto}
+          </h2>
+          <p className="text-gray-400 mb-6">{tema}</p>
+          <div className="flex gap-1 justify-center">
+            {MENSAJES_CARGA.map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                  i === mensajeCarga ? "bg-white scale-125" : "bg-gray-700"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -217,68 +250,4 @@ const togglePalabra = (p: string) => {
               onClick={verificar}
               disabled={seleccionadas.length !== 4}
               className={
-                "w-full py-4 rounded-2xl font-semibold transition " +
-                (seleccionadas.length === 4
-                  ? "bg-white text-gray-950 hover:bg-gray-100"
-                  : "bg-gray-800 text-gray-600 cursor-not-allowed")
-              }
-            >
-              Verificar ({seleccionadas.length}/4)
-            </button>
-            <button
-              onClick={usarPista}
-              disabled={pistasUsadas >= 3}
-              className="w-full py-3 rounded-2xl border border-gray-700 text-gray-300 hover:border-gray-500 transition text-sm"
-            >
-              💡 Pista ({3 - pistasUsadas} restantes)
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {gano && (
-              <div className="text-center mb-4">
-                <div className="text-4xl mb-2">🎉</div>
-                <div className="font-bold text-lg">¡Ganaste!</div>
-              </div>
-            )}
-            {!gano && (
-              <div className="text-center mb-4">
-                <div className="text-4xl mb-2">😔</div>
-                <div className="font-bold text-lg">Se acabaron los intentos</div>
-              </div>
-            )}
-            <button
-              onClick={() => router.push("/jugar")}
-              className="w-full py-4 rounded-2xl bg-white text-gray-950 font-semibold"
-            >
-              Jugar otro tema
-            </button>
-            <button
-              onClick={generarPuzzle}
-              className="w-full py-3 rounded-2xl border border-gray-700 text-gray-300 hover:border-gray-500 transition"
-            >
-              Mismo tema, nuevo puzzle
-            </button>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-
-export default function Partida() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-4xl mb-4">⚙️</div>
-            <p className="text-gray-400">Cargando...</p>
-          </div>
-        </main>
-      }
-    >
-      <PartidaContent />
-    </Suspense>
-  );
-}
+                "w-full
