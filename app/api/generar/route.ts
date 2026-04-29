@@ -31,13 +31,39 @@ NO inventes nada — solo incluye lo que encuentres en fuentes reales.`,
       ],
     });
 
-    // Extraer el resumen de datos verificados
     const datosVerificados = busqueda.content
       .filter((b) => b.type === "text")
       .map((b) => (b.type === "text" ? b.text : ""))
       .join("\n");
 
-    // PASO 2: Generar el puzzle SOLO con los datos verificados
+    // PASO 2: Generar el puzzle con dificultad bien definida
+    const nivelInstrucciones = {
+      fácil: `
+NIVEL FÁCIL — Para niños y personas con poco conocimiento del tema:
+- Usa palabras y nombres muy conocidos por cualquier persona
+- Las categorías deben ser obvias y directas (ej: "Colores", "Animales domésticos")
+- La conexión entre las palabras debe ser inmediatamente visible
+- Evita datos históricos específicos, fechas o estadísticas
+- Ejemplo bueno: "Cosas que son redondas": pelota, luna, naranja, rueda`,
+      medio: `
+NIVEL MEDIO — Para personas con conocimiento general del tema:
+- Usa nombres y datos que requieren algo de estudio o interés en el tema
+- Las categorías deben tener conexiones que no son inmediatamente obvias
+- Mezcla datos conocidos con algunos menos conocidos
+- Puede incluir fechas importantes, récords o datos específicos pero populares
+- Ejemplo bueno: "Países que han ganado el Mundial más de 3 veces": Brasil, Alemania, Italia, Argentina`,
+      difícil: `
+NIVEL DIFÍCIL — Para expertos o fanáticos del tema:
+- Usa datos muy específicos que solo conoce alguien que estudió el tema a fondo
+- Las categorías deben ser sutiles y no obvias — pueden parecer que se solapan pero no
+- Usa datos poco conocidos: récords específicos, años exactos, datos estadísticos precisos
+- Las palabras deben ser correctas pero poco evidentes como grupo
+- Ejemplo bueno: "Jugadores con más de 15 goles en Mundiales": Klose, Ronaldo, Müller, Fontaine
+- Otro ejemplo: "Países eliminados en semifinales en 3 Mundiales consecutivos": Holanda, Francia, Alemania, Brasil`,
+    };
+
+    const instruccion = nivelInstrucciones[dificultad as keyof typeof nivelInstrucciones] || nivelInstrucciones["medio"];
+
     const puzzle_response = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 1500,
@@ -48,14 +74,15 @@ NO inventes nada — solo incluye lo que encuentres en fuentes reales.`,
 
 ${datosVerificados}
 
-Crea un puzzle tipo "Connections" sobre "${tema}" con dificultad: ${dificultad}.
+Crea un puzzle tipo "Connections" sobre "${tema}".
 
-REGLAS:
+${instruccion}
+
+REGLAS GENERALES:
 - Usa SOLO datos que aparecen en la información verificada de arriba — NO agregues nada de tu memoria
 - Las 16 palabras deben ser completamente únicas — NUNCA repitas la misma palabra
 - Las categorías deben ser mutuamente excluyentes — ninguna palabra puede pertenecer a dos grupos
 - Sé muy específico en los nombres de categorías para evitar ambigüedad
-- Dificultad "${dificultad}": ${dificultad === "fácil" ? "conexiones obvias y palabras conocidas" : dificultad === "medio" ? "conexiones que requieren algo de conocimiento" : "conexiones sutiles o poco conocidas"}
 
 Responde SOLO con este JSON válido, sin texto adicional:
 {
@@ -82,7 +109,6 @@ Responde SOLO con este JSON válido, sin texto adicional:
 
     const puzzle = JSON.parse(jsonMatch[0]);
 
-    // Verificar que no haya palabras duplicadas
     const todasLasPalabras = puzzle.grupos.flatMap(
       (g: { palabras: string[] }) => g.palabras
     );
