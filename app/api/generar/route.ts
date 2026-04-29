@@ -5,6 +5,8 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest) {
   try {
     const { tema, dificultad } = await request.json();
