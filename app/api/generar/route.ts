@@ -10,30 +10,38 @@ export async function POST(request: NextRequest) {
     const { tema, dificultad } = await request.json();
 
     const nivelInstrucciones = {
-      fácil: "conexiones muy obvias y palabras conocidas por cualquier persona, incluso niños",
-      medio: "conexiones que requieren conocimiento general del tema",
-      difícil: "conexiones sutiles y datos muy específicos que solo conoce un experto",
+      fácil: `NIVEL FÁCIL — Para niños de 8 a 12 años:
+- Usa SOLO palabras que un niño de primaria conoce
+- PROHIBIDO: nombres científicos, términos técnicos, palabras en otro idioma
+- Las palabras deben ser de uso cotidiano: perro, gato, león, águila
+- Las categorías deben ser obvias: "Animales domésticos", "Animales de la selva"
+- EJEMPLO BUENO: palabras como Perro, Gato, Conejo, Hámster — NO Turritopsis dohrnii
+- Si dudas si un niño conoce la palabra, NO la uses`,
+      medio: `NIVEL MEDIO — Para jóvenes y adultos con cultura general:
+- Usa palabras conocidas por alguien que fue a la secundaria
+- Puede incluir nombres propios famosos, países, personajes históricos conocidos
+- Las conexiones requieren pensar un poco pero no son imposibles
+- EJEMPLO BUENO: Tiburón blanco, Delfín, Ballena azul, Pulpo`,
+      difícil: `NIVEL DIFÍCIL — Para adultos con conocimiento profundo del tema:
+- Usa datos muy específicos que solo conoce alguien que estudió el tema
+- Puede incluir nombres científicos, récords exactos, datos estadísticos precisos
+- Las conexiones son sutiles y requieren conocimiento experto
+- EJEMPLO BUENO: Turritopsis dohrnii, Axolote, Celacanto, Nautilo`,
     };
 
     const nivel = nivelInstrucciones[dificultad as keyof typeof nivelInstrucciones] || nivelInstrucciones["medio"];
 
-    const prompt = `Eres un experto en trivia y puzzles educativos en español con acceso a información verificada.
+    const prompt = `Eres un experto en trivia y puzzles educativos en español.
 
-Crea un puzzle tipo "Connections" sobre: "${tema}" con dificultad: ${dificultad} (${nivel}).
+Crea un puzzle tipo "Connections" sobre: "${tema}".
 
-REGLAS CRÍTICAS:
-1. USA SOLO datos 100% verídicos — si no estás seguro de un dato, no lo uses
+${nivel}
+
+REGLAS GENERALES:
+1. Usa SOLO datos 100% verídicos y verificables
 2. Las 16 palabras deben ser completamente ÚNICAS — nunca repitas ninguna
-3. Las categorías deben ser MUTUAMENTE EXCLUYENTES — ninguna palabra puede pertenecer lógicamente a dos grupos
-4. Si una palabra podría encajar en dos grupos, cámbiala por otra más específica
-5. Las categorías deben tener nombres muy específicos para evitar ambigüedad
-6. Para nivel DIFÍCIL: usa datos muy específicos como años exactos, récords precisos, datos estadísticos — NO uses categorías genéricas
-7. Para nivel FÁCIL: usa palabras y conexiones que cualquier niño pueda entender
-
-VERIFICA antes de responder:
-- ¿Todas las palabras son 100% correctas y verificables?
-- ¿Hay alguna palabra duplicada?
-- ¿Podría alguna palabra pertenecer a más de un grupo?
+3. Las categorías deben ser MUTUAMENTE EXCLUYENTES — ninguna palabra puede pertenecer a dos grupos
+4. Los nombres de categorías deben ser muy específicos para evitar ambigüedad
 
 Responde SOLO con este JSON válido, sin texto adicional:
 {
