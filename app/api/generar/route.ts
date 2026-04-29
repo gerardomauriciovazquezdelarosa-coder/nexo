@@ -78,12 +78,12 @@ Responde SOLO con este JSON válido, sin texto adicional:
     );
     const unicas = new Set(todasLasPalabras);
     if (unicas.size !== 16) {
-      return NextResponse.json({ error: "Error al generar" }, { status: 500 });
+      return NextResponse.json({ error: String(error) }, { status: 500 });
     }
 
     return NextResponse.json(puzzle);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error al generar" }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
