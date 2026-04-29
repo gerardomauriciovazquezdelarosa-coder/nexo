@@ -65,11 +65,11 @@ Responde SOLO con este JSON válido, sin texto adicional:
     });
 
     const content = message.content[0];
-    if (content.type !== "text") throw new Error("Error");
+    if (content.type !== "text") throw new Error("Respuesta no es texto");
 
     const text = content.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON");
+    if (!jsonMatch) throw new Error("No se encontró JSON");
 
     const puzzle = JSON.parse(jsonMatch[0]);
 
@@ -78,7 +78,7 @@ Responde SOLO con este JSON válido, sin texto adicional:
     );
     const unicas = new Set(todasLasPalabras);
     if (unicas.size !== 16) {
-      return NextResponse.json({ error: String(error) }, { status: 500 });
+      throw new Error(`Palabras duplicadas: ${unicas.size} únicas de 16`);
     }
 
     return NextResponse.json(puzzle);
