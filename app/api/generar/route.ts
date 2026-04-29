@@ -7,49 +7,98 @@ const client = new Anthropic({
 
 export const maxDuration = 60;
 
+// Lista blanca de palabras permitidas en nivel fácil
+const PALABRAS_FACILES = new Set([
+  "perro","gato","león","tigre","elefante","jirafa","cebra","mono","oso","lobo",
+  "zorro","conejo","ratón","caballo","vaca","cerdo","oveja","gallina","pato","águila",
+  "loro","paloma","pingüino","cocodrilo","serpiente","rana","tiburón","delfín","ballena",
+  "pulpo","mariposa","abeja","hormiga","araña","tortuga","camello","canguro","koala","panda",
+  "gorila","leopardo","hipopótamo","rinoceronte","flamenco","tucán","cóndor","jaguar","puma",
+  "burro","toro","gallo","pez","cangrejo","medusa","estrella de mar","murciélago","búho","cigüeña"
+]);
+
 export async function POST(request: NextRequest) {
   try {
     const { tema, dificultad } = await request.json();
 
-    const prompt = `Eres el mejor diseñador de puzzles educativos en español. Crea un puzzle tipo "Connections" sobre "${tema}" nivel ${dificultad}.
+    // Intentamos hasta 3 veces para nivel fácil
+    const maxIntentos = dificultad === "fácil" ? 3 : 1;
 
-PRINCIPIO FUNDAMENTAL DEL PUZZLE:
-Las 4 palabras de cada grupo son ejemplos concretos y conocidos de un concepto más amplio. El jugador debe descubrir ese concepto. La satisfacción viene de ir de lo concreto a lo abstracto.
+    for (let intento = 0; intento < maxIntentos; intento++) {
+      const puzzle = await generarPuzzle(tema, dificultad);
+      if (!puzzle) continue;
 
-EJEMPLOS DE CÓMO FUNCIONA ESTE PRINCIPIO:
+      // Verificar palabras únicas
+      const todas = puzzle.grupos.flatMap((g: { palabras: string[] }) => g.palabras);
+      const unicas = new Set(todas);
+      if (unicas.size !== 16) continue;
 
-Tema "Animales", nivel fácil:
-- Grupo: Perro, Gato, Conejo, Hámster → categoría: "Animales que se tienen como mascotas"
-- Grupo: León, Tigre, Cocodrilo, Lobo → categoría: "Animales depredadores salvajes"
-- Grupo: Ballena, Tiburón, Pulpo, Delfín → categoría: "Animales que viven en el océano"
-- Grupo: Águila, Loro, Paloma, Pingüino → categoría: "Animales que tienen plumas"
+      // Para nivel fácil, verificar que TODAS las palabras estén en la lista blanca
+      if (dificultad === "fácil") {
+        const palabrasInvalidas = todas.filter(
+          (p: string) => !PALABRAS_FACILES.has(p.toLowerCase())
+        );
+        if (palabrasInvalidas.length > 0) {
+          console.log(`Intento ${intento + 1}: palabras inválidas: ${palabrasInvalidas.join(", ")}`);
+          continue; // Rechazar y volver a intentar
+        }
+      }
 
-Tema "Grandes pensadores", nivel difícil:
-- Grupo: Sócrates, Platón, Aristóteles, Epicuro → categoría: "Filósofos de la Grecia antigua"
-- Grupo: Da Vinci, Miguel Ángel, Rafael, Botticelli → categoría: "Pintores del Renacimiento italiano"
-- Grupo: Napoleón, Alejandro, César, Gengis → categoría: "Conquistadores militares de imperios"
-- Grupo: Shakespeare, Cervantes, Dante, Homero → categoría: "Escritores fundadores de su idioma"
+      return NextResponse.json(puzzle);
+    }
 
-Tema "Historia de México", nivel medio:
-- Grupo: Hidalgo, Morelos, Guerrero, Allende → categoría: "Héroes de la Independencia mexicana"
-- Grupo: Tenochtitlán, Chichén Itzá, Palenque, Teotihuacán → categoría: "Ciudades del México prehispánico"
-- Grupo: Oaxaca, Jalisco, Veracruz, Michoacán → categoría: "Estados con gastronomía reconocida mundialmente"
-- Grupo: Diego Rivera, Frida Kahlo, José Clemente Orozco, David Siqueiros → categoría: "Muralistas mexicanos del siglo XX"
+    return NextResponse.json({ error: "No se pudo generar un puzzle válido. Intenta de nuevo." }, { status: 500 });
 
-REGLAS SEGÚN NIVEL:
+  } catch (error) {
+    console.error("Error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
+
+async function generarPuzzle(tema: string, dificultad: string) {
+  try {
+    const prompt = `Eres el mejor diseñador de puzzles educativos en español. Tu misión es crear puzzles tipo "Connections" que sean simultáneamente entretenidos, sorprendentes y educativos.
+
+TEMA: "${tema}"
+NIVEL: ${dificultad}
+
+EL PRINCIPIO QUE HACE UN PUZZLE MEMORABLE:
+Las 4 palabras de cada grupo son ejemplos concretos de un concepto más amplio. El jugador va de lo concreto a lo abstracto. La satisfacción viene del momento "¡AH, CLARO!" — cuando la conexión es sorprendente al principio pero perfectamente obvia al descubrirla.
+
+EJEMPLOS QUE ILUSTRAN ESTE PRINCIPIO:
+
+Para niños (fácil):
+- Perro, Gato, Conejo, Hámster → "Animales que vivien en casa con las familias"
+- León, Tigre, Lobo, Cocodrilo → "Animales que cazan para comer"  
+- Ballena, Tiburón, Delfín, Pulpo → "Animales que viven en el océano"
+- Águila, Loro, Paloma, Pingüino → "Animales que tienen plumas"
+
+Para adultos (medio):
+- Sócrates, Platón, Aristóteles, Epicuro → "Filósofos que vivieron en la Grecia antigua"
+- Da Vinci, Miguel Ángel, Rafael, Botticelli → "Pintores del Renacimiento italiano"
+- Hidalgo, Morelos, Guerrero, Allende → "Héroes de la Independencia de México"
+- Martillo, Destornillador, Llave, Serrucho → "Herramientas de carpintería"
+
+Para expertos (difícil):
+- Quijote, Hamlet, Raskolnikov, Gatsby → "Protagonistas masculinos consumidos por una obsesión"
+- Aureliano Buendía, Florentino Ariza, Santiago Nasar, El Coronel → "Personajes de novelas de García Márquez"
+- y=2x+1, y=-3x+5, y=x, y=7 → "Ecuaciones que forman una línea recta"
+
 ${dificultad === "fácil" 
-? "FÁCIL: Las 16 palabras deben ser conocidas por cualquier niño mexicano de 8 años. Usa animales comunes, objetos cotidianos, personajes de cuentos clásicos, países muy famosos, frutas, colores. PROHIBIDO: nombres científicos, términos técnicos, palabras en inglés, personajes históricos poco conocidos, récords mundiales, especies raras."
-: dificultad === "medio" 
-? "MEDIO: Las palabras son conocidas para adultos con cultura general de preparatoria. Las categorías requieren conocimiento moderado del tema. Puede incluir personajes históricos famosos, obras conocidas, datos verificables de cultura general."
-: "DIFÍCIL: Las palabras son conocidas para expertos o apasionados del tema. Las categorías son conexiones sutiles que requieren conocimiento profundo. Usa datos precisos, periodos históricos específicos, clasificaciones técnicas correctas. El jugador debe sentir que aprendió algo valioso al ver la respuesta."}
+? `NIVEL FÁCIL — REGLA ABSOLUTA:
+Usa ÚNICAMENTE estos animales u objetos que cualquier niño mexicano de 8 años conoce perfectamente:
+Perro, Gato, León, Tigre, Elefante, Jirafa, Cebra, Mono, Oso, Lobo, Zorro, Conejo, Ratón, Caballo, Vaca, Cerdo, Oveja, Gallina, Pato, Águila, Loro, Paloma, Pingüino, Cocodrilo, Serpiente, Rana, Tiburón, Delfín, Ballena, Pulpo, Mariposa, Abeja, Tortuga, Camello, Canguro, Panda, Gorila, Leopardo, Hipopótamo, Jaguar, Puma, Toro, Gallo, Murciélago, Búho.
+SOLO puedes usar palabras de esa lista. Si el tema requiere otras palabras, elige las más cercanas de esa lista.`
+: dificultad === "medio"
+? `NIVEL MEDIO: Palabras conocidas para adultos mexicanos con cultura general. Las categorías requieren pensar pero son justas. PROHIBIDO: nombres científicos en latín, especies raras o poco conocidas.`
+: `NIVEL DIFÍCIL: Conexiones sutiles para expertos. Datos precisos, clasificaciones técnicas, conexiones literarias o históricas profundas. El jugador debe sentir que aprendió algo valioso.`}
 
-REGLAS TÉCNICAS IRRENUNCIABLES:
-1. PROHIBIDO absolutamente usar nombres científicos en latín en ningún nivel
-2. Las 16 palabras deben ser completamente únicas — ninguna se repite
-3. Las categorías deben ser mutuamente excluyentes — ninguna palabra podría pertenecer a otro grupo
-4. Cada una de las 4 palabras debe encajar en su categoría por exactamente la misma razón
-5. Usa SOLO datos 100% verídicos — si tienes duda de un dato, no lo uses
-6. La categoría debe ser el concepto que une a las palabras, no una descripción arbitraria
+REGLAS TÉCNICAS:
+1. PROHIBIDO ABSOLUTO en cualquier nivel: nombres científicos en latín (Turritopsis, Fennec, Borealis, etc.)
+2. Las 16 palabras deben ser completamente únicas
+3. Las categorías deben ser mutuamente excluyentes
+4. Cada palabra debe pertenecer a su grupo por exactamente la misma razón que las otras tres
+5. Solo datos 100% verídicos
 
 Responde SOLO con JSON válido, sin markdown, sin backticks, sin texto adicional:
 {
@@ -61,7 +110,7 @@ Responde SOLO con JSON válido, sin markdown, sin backticks, sin texto adicional
     {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#f59e0b", "emoji": "🟡"},
     {"categoria": "concepto que une las 4 palabras", "palabras": ["palabra1","palabra2","palabra3","palabra4"], "color": "#ef4444", "emoji": "🔴"}
   ],
-  "pistas": ["pista que orienta sin revelar", "pista que orienta sin revelar", "pista que orienta sin revelar"]
+  "pistas": ["pista que orienta sin revelar la respuesta", "pista que orienta sin revelar la respuesta", "pista que orienta sin revelar la respuesta"]
 }`;
 
     const message = await client.messages.create({
@@ -71,29 +120,14 @@ Responde SOLO con JSON válido, sin markdown, sin backticks, sin texto adicional
     });
 
     const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json({ error: "Respuesta inesperada" }, { status: 500 });
-    }
+    if (content.type !== "text") return null;
 
     const text = content.text.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json({ error: "No se encontró JSON" }, { status: 500 });
-    }
+    if (!jsonMatch) return null;
 
-    const puzzle = JSON.parse(jsonMatch[0]);
-
-    const todasLasPalabras = puzzle.grupos.flatMap(
-      (g: { palabras: string[] }) => g.palabras
-    );
-    const unicas = new Set(todasLasPalabras);
-    if (unicas.size !== 16) {
-      return NextResponse.json({ error: `Solo ${unicas.size} palabras únicas` }, { status: 500 });
-    }
-
-    return NextResponse.json(puzzle);
-  } catch (error) {
-    console.error("Error:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
   }
 }
