@@ -3,46 +3,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const CATEGORIAS = [
-  {
-    nombre: "🏛️ Historia",
-    subtemas: ["Historia de México"],
-  },
-  {
-    nombre: "🎨 Arte",
-    subtemas: ["Arte"],
-  },
-  {
-    nombre: "📖 Literatura",
-    subtemas: ["Literatura Universal"],
-  },
-  {
-    nombre: "🧮 Matemáticas",
-    subtemas: ["Matemáticas"],
-  },
-  {
-    nombre: "🔭 Ciencia",
-    subtemas: ["Ciencia"],
-  },
-  {
-    nombre: "🌎 Geografía",
-    subtemas: ["Geografía"],
-  },
-  {
-    nombre: "⚽ Deportes",
-    subtemas: ["Deportes"],
-  },
-  {
-    nombre: "🧠 Filosofía",
-    subtemas: ["Filosofía"],
-  },
-  {
-    nombre: "🔧 Herramientas",
-    subtemas: ["Herramientas"],
-  },
-  {
-    nombre: "🎭 Personajes ficticios",
-    subtemas: ["Personajes ficticios"],
-  },
+  { nombre: "🏛️ Historia", subtemas: ["Historia de México"] },
+  { nombre: "🎨 Arte", subtemas: ["Arte"] },
+  { nombre: "📖 Literatura", subtemas: ["Literatura Universal"] },
+  { nombre: "🧮 Matemáticas", subtemas: ["Matemáticas"] },
+  { nombre: "🔭 Ciencia", subtemas: ["Ciencia"] },
+  { nombre: "🌎 Geografía", subtemas: ["Geografía"] },
+  { nombre: "⚽ Deportes", subtemas: ["Deportes"] },
+  { nombre: "🧠 Filosofía", subtemas: ["Filosofía"] },
+  { nombre: "🔧 Herramientas", subtemas: ["Herramientas"] },
+  { nombre: "🎭 Personajes ficticios", subtemas: ["Personajes ficticios"] },
 ];
 
 const DIFICULTADES = [
@@ -70,7 +40,6 @@ export default function Jugar() {
           <button onClick={() => router.push("/")} className="text-gray-400 hover:text-white">←</button>
           <h1 className="text-2xl font-bold">Elige un tema</h1>
         </div>
-
         <div className="mb-6">
           <label className="text-gray-400 text-sm mb-3 block">Categorías:</label>
           <div className="space-y-2">
@@ -103,7 +72,6 @@ export default function Jugar() {
             ))}
           </div>
         </div>
-
         <div className="mb-8">
           <label className="text-gray-400 text-sm mb-3 block">Dificultad:</label>
           <div className="grid grid-cols-3 gap-2">
@@ -113,4 +81,27 @@ export default function Jugar() {
                 onClick={() => setDificultad(d.id)}
                 className={"py-3 rounded-xl text-center transition " +
                   (dificultad === d.id
-                    ? "bg-white text-gray-950 font-semibo
+                    ? "bg-white text-gray-950 font-semibold"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700")}
+              >
+                <div>{d.emoji}</div>
+                <div className="text-sm font-medium">{d.label}</div>
+                <div className="text-xs opacity-60">{d.descripcion}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={handleJugar}
+          disabled={!temaSeleccionado}
+          className={"w-full py-4 rounded-2xl font-semibold text-lg transition " +
+            (temaSeleccionado
+              ? "bg-white text-gray-950 hover:bg-gray-100"
+              : "bg-gray-800 text-gray-600 cursor-not-allowed")}
+        >
+          {temaSeleccionado ? "▶ Jugar: " + temaSeleccionado : "Elige un tema para continuar"}
+        </button>
+      </div>
+    </main>
+  );
+}
