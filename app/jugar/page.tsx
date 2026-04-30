@@ -5,94 +5,43 @@ import { useRouter } from "next/navigation";
 const CATEGORIAS = [
   {
     nombre: "🏛️ Historia",
-    subtemas: [
-      "Historia de México",
-      "Historia Mundial",
-      "Civilizaciones Antiguas",
-      "Revoluciones y Guerras",
-    ],
+    subtemas: ["Historia de México"],
   },
   {
-    nombre: "🎨 Arte y Cultura",
-    subtemas: [
-      "Pintores del mundo",
-      "Literatura universal",
-      "Cine clásico y moderno",
-      "Música clásica",
-      "Arquitectura famosa",
-    ],
-  },
-  {
-    nombre: "🔭 Ciencia",
-    subtemas: [
-      "Grandes científicos",
-      "El universo y el espacio",
-      "Inventos que cambiaron el mundo",
-      "El cuerpo humano",
-    ],
-  },
-  {
-    nombre: "🧮 Matemáticas",
-    subtemas: [
-      "Operaciones básicas",
-      "Geometría",
-      "Álgebra",
-      "Matemáticos famosos",
-    ],
+    nombre: "🎨 Arte",
+    subtemas: ["Arte"],
   },
   {
     nombre: "📖 Literatura",
-    subtemas: [
-      "Personajes de novelas clásicas",
-      "Escritores latinoamericanos",
-      "Cuentos y fábulas",
-      "Poetas del mundo",
-    ],
+    subtemas: ["Literatura Universal"],
+  },
+  {
+    nombre: "🧮 Matemáticas",
+    subtemas: ["Matemáticas"],
+  },
+  {
+    nombre: "🔭 Ciencia",
+    subtemas: ["Ciencia"],
   },
   {
     nombre: "🌎 Geografía",
-    subtemas: [
-      "Capitales del mundo",
-      "Países de América Latina",
-      "Ríos y montañas famosas",
-      "Ciudades históricas",
-    ],
+    subtemas: ["Geografía"],
   },
   {
     nombre: "⚽ Deportes",
-    subtemas: [
-      "Fútbol mundial",
-      "Atletismo y Olimpiadas",
-      "Tenistas famosos",
-      "Boxeadores legendarios",
-    ],
+    subtemas: ["Deportes"],
   },
   {
-    nombre: "🍽️ Gastronomía",
-    subtemas: [
-      "Cocina mexicana",
-      "Platillos del mundo",
-      "Ingredientes y especias",
-      "Chefs famosos",
-    ],
+    nombre: "🧠 Filosofía",
+    subtemas: ["Filosofía"],
   },
   {
-    nombre: "🎭 Entretenimiento",
-    subtemas: [
-      "Personajes de Disney",
-      "Superhéroes de cómic",
-      "Series de televisión",
-      "Videojuegos clásicos",
-    ],
+    nombre: "🔧 Herramientas",
+    subtemas: ["Herramientas"],
   },
   {
-    nombre: "🔧 Oficios y Herramientas",
-    subtemas: [
-      "Herramientas del carpintero",
-      "Instrumentos del médico",
-      "Materiales del arquitecto",
-      "Utensilios de cocina",
-    ],
+    nombre: "🎭 Personajes ficticios",
+    subtemas: ["Personajes ficticios"],
   },
 ];
 
@@ -164,28 +113,4 @@ export default function Jugar() {
                 onClick={() => setDificultad(d.id)}
                 className={"py-3 rounded-xl text-center transition " +
                   (dificultad === d.id
-                    ? "bg-white text-gray-950 font-semibold"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700")}
-              >
-                <div>{d.emoji}</div>
-                <div className="text-sm font-medium">{d.label}</div>
-                <div className="text-xs opacity-60">{d.descripcion}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          onClick={handleJugar}
-          disabled={!temaSeleccionado}
-          className={"w-full py-4 rounded-2xl font-semibold text-lg transition " +
-            (temaSeleccionado
-              ? "bg-white text-gray-950 hover:bg-gray-100"
-              : "bg-gray-800 text-gray-600 cursor-not-allowed")}
-        >
-          {temaSeleccionado ? "▶ Jugar: " + temaSeleccionado : "Elige un tema para continuar"}
-        </button>
-      </div>
-    </main>
-  );
-}
+                    ? "bg-white text-gray-950 font-semibo
