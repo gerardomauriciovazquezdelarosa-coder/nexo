@@ -36,7 +36,7 @@ export default function Home() {
       </div>
       <div className="relative z-10 w-full max-w-sm space-y-3">
         <button onClick={() => router.push("/jugar")} className="w-full py-4 rounded-2xl font-bold text-lg bg-gradient-to-r from-green-500 to-blue-500 text-white hover:opacity-90 transition">Jugar ahora</button>
-        <button className="w-full py-4 rounded-2xl font-bold text-lg border border-gray-700 text-gray-300 hover:border-gray-500 transition">Como jugar</button>
+        <button onClick={() => router.push("/como-jugar")} className="w-full py-4 rounded-2xl font-bold text-lg border border-gray-700 text-gray-300 hover:border-gray-500 transition">Como jugar</button>
       </div>
     </main>
   );
