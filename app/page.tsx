@@ -25,10 +25,9 @@ export default function Home() {
         <p className="text-gray-400 text-lg italic">Desafía tu mente.</p>
       </div>
       <div className="relative z-10 text-center mb-8">
-        <div className="text-3xl font-black animate-pulse mb-2">
-          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span>
+        <div className="text-2xl font-black animate-pulse">
+          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span><span className="text-white"> MUNDIALISTA</span>
         </div>
-        <div className="text-xl font-bold text-white tracking-widest">MUNDIALISTA</div>
       </div>
       <div className="relative z-10 flex gap-8 mb-10 text-center">
         <div><div className="text-2xl font-bold">12K+</div><div className="text-xs text-gray-500 uppercase">Jugadores</div></div>
