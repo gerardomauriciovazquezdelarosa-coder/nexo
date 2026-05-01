@@ -13,6 +13,8 @@ const CATEGORIAS = [
   { nombre: "🧠 Filosofía", subtemas: ["Filosofía"] },
   { nombre: "🔧 Herramientas", subtemas: ["Herramientas"] },
   { nombre: "🎭 Personajes ficticios", subtemas: ["Personajes ficticios"] },
+  { nombre: "🏆 Historia de los Mundiales", subtemas: ["Historia de los Mundiales"] },
+  { nombre: "⚽ Mundial 2026", subtemas: ["Mundial 2026"] },
 ];
 
 const DIFICULTADES = [

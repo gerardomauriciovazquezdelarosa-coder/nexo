@@ -7,7 +7,7 @@ const SUPABASE_KEY = 'sb_publishable_2ebLTBUpprXQc1kYvw3FNw_MCLiiGyC';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const workbook = readFile('scripts/NEXO_Base_Puzzles_v16.xlsx');
+const workbook = readFile('scripts/NEXO_Base_Puzzles_v17.xlsx');
 let total = 0;
 let errores = 0;
 
