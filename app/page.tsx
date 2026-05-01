@@ -1,10 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 
 export default function Home() {
   const router = useRouter();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -78,7 +76,7 @@ export default function Home() {
       <div className="relative z-10 flex items-center gap-4 mb-8">
         <canvas ref={canvasRef} width={120} height={120} />
         <div className="text-3xl font-black animate-pulse">
-          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span>
+          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span> <span className="text-white text-2xl">Mundialista</span>
         </div>
       </div>
       <div className="relative z-10 flex gap-8 mb-10 text-center">
