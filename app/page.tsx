@@ -3,55 +3,6 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    let angle = 0;
-    function draw() {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const cx = 60, cy = 60, R = 54;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy, R - 1, 0, Math.PI * 2);
-      ctx.clip();
-      const pr = R * 0.3;
-      function drawPent(px, py, rot) {
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const a = rot + (i * 2 * Math.PI) / 5 - Math.PI / 2;
-          if (i === 0) ctx.moveTo(px + pr * Math.cos(a), py + pr * Math.sin(a));
-          else ctx.lineTo(px + pr * Math.cos(a), py + pr * Math.sin(a));
-        }
-        ctx.closePath();
-        ctx.fillStyle = "#111111";
-        ctx.fill();
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      drawPent(cx, cy, angle);
-      for (let i = 0; i < 5; i++) {
-        const a = angle + (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        drawPent(cx + R * 0.58 * Math.cos(a), cy + R * 0.58 * Math.sin(a), angle + i);
-      }
-      ctx.restore();
-      angle += 0.005;
-    }
-    const id = setInterval(draw, 16);
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-950 to-black" />
@@ -73,11 +24,11 @@ export default function Home() {
         <p className="text-gray-300 text-lg">Conecta los conceptos.</p>
         <p className="text-gray-400 text-lg italic">Desafía tu mente.</p>
       </div>
-      <div className="relative z-10 flex items-center gap-4 mb-8">
-        <canvas ref={canvasRef} width={120} height={120} />
-        <div className="text-3xl font-black animate-pulse">
-          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span> <span className="text-white text-2xl">Mundialista</span>
+      <div className="relative z-10 text-center mb-8">
+        <div className="text-3xl font-black animate-pulse mb-2">
+          <span className="text-green-400">G</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">O</span><span className="text-blue-400">O</span><span className="text-yellow-400">O</span><span className="text-red-400">O</span><span className="text-green-400">L</span>
         </div>
+        <div className="text-xl font-bold text-white tracking-widest">MUNDIALISTA</div>
       </div>
       <div className="relative z-10 flex gap-8 mb-10 text-center">
         <div><div className="text-2xl font-bold">12K+</div><div className="text-xs text-gray-500 uppercase">Jugadores</div></div>
