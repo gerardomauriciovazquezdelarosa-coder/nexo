@@ -4,12 +4,34 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
   return (
-    <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full text-center">
-        <h1 className="text-7xl font-bold mb-3 tracking-tight">NEXO</h1>
-        <p className="text-gray-400 text-lg mb-8">Conecta los conceptos. Desafía tu mente.</p>
-        <button onClick={() => router.push("/jugar")} className="bg-white text-gray-950 font-semibold px-8 py-4 rounded-2xl text-lg hover:bg-gray-100 transition w-full mb-3">Jugar ahora</button>
-        <button className="border border-gray-700 text-gray-300 font-semibold px-8 py-4 rounded-2xl text-lg hover:border-gray-500 transition w-full">Iniciar sesion</button>
+    <main className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-950 to-black" />
+      <div className="relative z-10 flex gap-2 mb-8">
+        <div className="w-8 h-1 rounded-full bg-green-500" />
+        <div className="w-8 h-1 rounded-full bg-blue-500" />
+        <div className="w-8 h-1 rounded-full bg-yellow-500" />
+        <div className="w-8 h-1 rounded-full bg-red-500" />
+      </div>
+      <div className="relative z-10 mb-4">
+        <h1 className="text-8xl font-black tracking-tight">
+          <span className="text-green-500">N</span>
+          <span className="text-blue-500">E</span>
+          <span className="text-yellow-500">X</span>
+          <span className="text-red-500">O</span>
+        </h1>
+      </div>
+      <div className="relative z-10 text-center mb-8">
+        <p className="text-gray-300 text-lg">Conecta los conceptos.</p>
+        <p className="text-gray-400 text-lg italic">Desafía tu mente.</p>
+      </div>
+      <div className="relative z-10 flex gap-8 mb-10 text-center">
+        <div><div className="text-2xl font-bold">12K+</div><div className="text-xs text-gray-500 uppercase">Jugadores</div></div>
+        <div><div className="text-2xl font-bold">500+</div><div className="text-xs text-gray-500 uppercase">Puzzles</div></div>
+        <div><div className="text-2xl font-bold">4</div><div className="text-xs text-gray-500 uppercase">Niveles</div></div>
+      </div>
+      <div className="relative z-10 w-full max-w-sm space-y-3">
+        <button onClick={() => router.push("/jugar")} className="w-full py-4 rounded-2xl font-bold text-lg bg-gradient-to-r from-green-500 to-blue-500 text-white hover:opacity-90 transition">Jugar ahora</button>
+        <button className="w-full py-4 rounded-2xl font-bold text-lg border border-gray-700 text-gray-300 hover:border-gray-500 transition">Como jugar</button>
       </div>
     </main>
   );
