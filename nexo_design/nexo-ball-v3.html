@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>NEXO Ball v3</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#0a0a0f; display:flex; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 480, H = 180;
+canvas.width = W; canvas.height = H;
+
+const GREEN  = '#3ecf6e';
+const BLUE   = '#4d9eff';
+const YELLOW = '#f5d547';
+const RED    = '#f05a40';
+const COLS   = [GREEN, BLUE, YELLOW, RED];
+
+// Ball params
+const BCX = 88, BCY = H/2, BR = 76;
+
+// ── Perfect flat-top hex tessellation ──────────────────
+// Flat-top hex: pointy on left/right, flat on top/bottom
+// circumradius R → inradius r = R * sqrt(3)/2
+// col spacing: 3/2 * R  (horizontal)
+// row spacing: sqrt(3) * R (vertical)
+// odd cols shifted down by sqrt(3)/2 * R
+//
+// Choose R so hexes tile perfectly within circle of radius BR
+// We want hexes as large as possible while fitting ~19 fully inside BR
+// Trial: R=18 gives nice coverage for BR=76
+
+const HR = 17.5; // hex circumradius
+const HW = HR;                        // half flat-width = R
+const HH = HR * Math.sqrt(3) / 2;    // half height = inradius
+
+const COL_STEP = HR * 1.5;
+const ROW_STEP = HR * Math.sqrt(3);
+
+// Generate all hex centers, keep those whose entire hex fits inside BR
+// (center dist + HR < BR, with small padding)
+const hexes = [];
+
+for (let col = -7; col <= 7; col++) {
+  for (let row = -7; row <= 7; row++) {
+    const hx = BCX + col * COL_STEP;
+    const hy = BCY + row * ROW_STEP + (Math.abs(col) % 2 === 1 ? ROW_STEP / 2 : 0);
+    const dist = Math.hypot(hx - BCX, hy - BCY);
+    // Include hex if its center is within BR - HR * 0.86 (inradius)
+    // This ensures all 6 vertices are inside the clip circle
+    if (dist < BR - HH * 0.85) {
+      // Color: mix angle sector + ring for visual variety
+      const angle  = Math.atan2(hy - BCY, hx - BCX);
+      const sector = ((Math.floor(((angle + Math.PI) / (2 * Math.PI)) * 6) % 6) + 6) % 6;
+      const ring   = Math.floor(dist / (HR * 1.8));
+      const colorIdx = (sector + ring) % 4;
+      hexes.push({ hx, hy, dist, colorIdx });
+    }
+  }
+}
+
+// ── Flat-top hex vertices ─────────────────────────────
+function flatHexPts(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (i * 60) * Math.PI / 180; // 0,60,120,...  flat-top
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  return pts;
+}
+
+function h2r(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function fillPoly(pts, fill, stroke, sw) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  if (fill)  { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = sw; ctx.stroke(); }
+}
+
+// ── Draw ball ─────────────────────────────────────────
+function drawBall(rot, alpha) {
+  // Ambient glow
+  const glow = ctx.createRadialGradient(BCX, BCY, BR*0.1, BCX, BCY, BR*1.5);
+  glow.addColorStop(0,   h2r(GREEN, 0.12 * alpha));
+  glow.addColorStop(0.5, h2r(BLUE,  0.06 * alpha));
+  glow.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(BCX, BCY, BR * 1.5, 0, Math.PI*2); ctx.fill();
+
+  ctx.save();
+  // Clip to sphere
+  ctx.beginPath(); ctx.arc(BCX, BCY, BR, 0, Math.PI*2); ctx.clip();
+
+  // Dark base
+  ctx.fillStyle = '#080810';
+  ctx.fillRect(BCX-BR-1, BCY-BR-1, BR*2+2, BR*2+2);
+
+  // Rotate hexes
+  ctx.save();
+  ctx.translate(BCX, BCY);
+  ctx.rotate(rot);
+  ctx.translate(-BCX, -BCY);
+
+  for (const h of hexes) {
+    const col   = COLS[h.colorIdx];
+    const shade = 1 - (h.dist / BR) * 0.55;  // brighter near center
+    const pts   = flatHexPts(h.hx, h.hy, HR);
+
+    // Fill: solid color with sphere shading
+    fillPoly(pts,
+      h2r(col, (0.35 + shade * 0.40) * alpha),
+      h2r(col, (0.70 + shade * 0.20) * alpha),
+      0.6  // hairline stroke to seal gaps
+    );
+  }
+  ctx.restore();
+
+  // Sphere specular highlight
+  const spec = ctx.createRadialGradient(
+    BCX - BR*0.3, BCY - BR*0.3, 1,
+    BCX, BCY, BR
+  );
+  spec.addColorStop(0,   `rgba(255,255,255,${0.18 * alpha})`);
+  spec.addColorStop(0.3, `rgba(255,255,255,${0.05 * alpha})`);
+  spec.addColorStop(0.7, `rgba(0,0,0,0)`);
+  spec.addColorStop(1,   `rgba(0,0,0,${0.30 * alpha})`);
+  ctx.fillStyle = spec;
+  ctx.beginPath(); ctx.arc(BCX, BCY, BR, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // Outer ring
+  ctx.beginPath(); ctx.arc(BCX, BCY, BR, 0, Math.PI*2);
+  ctx.strokeStyle = `rgba(255,255,255,${0.08 * alpha})`;
+  ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+// ── Draw ¡GOOOOOOOL! ──────────────────────────────────
+const WORD    = '¡GOOOOOOOL!';
+const WLEN    = WORD.length;  // 11
+const LCOLS   = [YELLOW, GREEN, BLUE, YELLOW, RED, GREEN, BLUE, YELLOW, RED, GREEN, YELLOW];
+const FSIZE   = 26;
+const START_X = 182;
+const LW      = 27;
+
+function eio(t){ return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function drawGoool(progress, alpha) {
+  ctx.save();
+  ctx.font = `900 ${FSIZE}px Outfit, Arial Black, sans-serif`;
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i < WLEN; i++) {
+    const lp = clamp((progress - i / WLEN) / (1 / WLEN), 0, 1);
+    if (lp <= 0) continue;
+    const ep  = eio(lp);
+    const col = LCOLS[i % LCOLS.length];
+    const lx  = START_X + i * LW + LW / 2;
+    const ly  = BCY + lerp(-20, 0, ep);
+    const sc  = lerp(0.2, 1, ep);
+
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.scale(sc, sc);
+    ctx.globalAlpha = ep * alpha;
+
+    const tw = ctx.measureText(WORD[i]).width;
+    ctx.shadowColor = col;
+    ctx.shadowBlur  = 14;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth   = 3;
+    ctx.lineJoin    = 'round';
+    ctx.strokeText(WORD[i], -tw/2, 0);
+    ctx.fillStyle = col;
+    ctx.fillText(WORD[i], -tw/2, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// ── Timeline ──────────────────────────────────────────
+// 0.00–0.10  ball fade in
+// 0.10–0.50  ball rotates 120°
+// 0.50–0.78  ¡GOOOOOOOL! appears letter by letter
+// 0.78–0.88  hold
+// 0.88–1.00  fade out
+
+const CYCLE = 5000;
+let start = null;
+
+function render(ts) {
+  if (!start) start = ts;
+  const t = ((ts - start) % CYCLE) / CYCLE;
+  ctx.clearRect(0, 0, W, H);
+
+  let bAlpha=1, rot=0, gP=0, gA=0;
+
+  if (t < 0.10) {
+    bAlpha = eio(t / 0.10);
+    rot    = 0;
+  } else if (t < 0.50) {
+    bAlpha = 1;
+    rot    = ((t-0.10)/0.40) * Math.PI * 0.67;
+  } else if (t < 0.78) {
+    rot    = Math.PI * 0.67;
+    gP     = (t-0.50)/0.28;
+    gA     = 1;
+  } else if (t < 0.88) {
+    rot    = Math.PI * 0.67; gP=1; gA=1;
+  } else {
+    const fa = 1 - eio((t-0.88)/0.12);
+    rot=Math.PI*0.67; gP=1; bAlpha=fa; gA=fa;
+  }
+
+  drawBall(rot, bAlpha);
+  if (gA > 0) drawGoool(gP, gA);
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

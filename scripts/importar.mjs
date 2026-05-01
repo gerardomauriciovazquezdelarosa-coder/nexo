@@ -3,11 +3,11 @@ import pkg from 'xlsx';
 const { readFile, utils } = pkg;
 
 const SUPABASE_URL = 'https://mokznerldaewdjscokjg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_2ebLTBUpprXQc1kYvw3FNw_MCLiiGyC';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1va3puZXJsZGFld2Rqc2Nva2pnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNjE5MTAsImV4cCI6MjA5MjYzNzkxMH0.vGGgIlpy6TNpMsxBLWKz3K9WS7zZJuibJ_0OmH_q5a8';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const workbook = readFile('scripts/NEXO_Base_Puzzles_v17.xlsx');
+const workbook = readFile('scripts/NEXO_Base_Puzzles_v18.xlsx');
 let total = 0;
 let errores = 0;
 

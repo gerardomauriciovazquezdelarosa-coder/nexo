@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXO — App Móvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #0d0d14;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    overflow: hidden;
+  }
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+
+  /* Ambient glow behind phone */
+  .scene {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scene::before {
+    content: '';
+    position: absolute;
+    width: 420px; height: 420px;
+    background: radial-gradient(ellipse,
+      rgba(62, 207, 110, 0.12) 0%,
+      rgba(77, 158, 255, 0.08) 35%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div class="scene" id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── COLOR SYSTEM ─────────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentGreen":  "#3ecf6e",
+  "accentBlue":   "#4d9eff",
+  "accentYellow": "#f5d547",
+  "accentRed":    "#f05a40",
+  "bgColor":      "#0a0a0f",
+  "fontDisplay":  "Outfit",
+  "roundness":    "18"
+}/*EDITMODE-END*/;
+
+/* ─── THEME + DIFFICULTY DATA ──────────────────────────── */
+const THEMES = [
+  { id:'historia',     emoji:'🏛️',  label:'Historia',     desc:'Hechos y personajes históricos' },
+  { id:'arte',         emoji:'🎨',  label:'Arte',         desc:'Movimientos, obras y artistas' },
+  { id:'literatura',   emoji:'📖',  label:'Literatura',   desc:'Autores, obras y personajes' },
+  { id:'matematicas',  emoji:'➗',  label:'Matemáticas',  desc:'Conceptos y teorías matemáticas' },
+  { id:'ciencia',      emoji:'🔬',  label:'Ciencia',      desc:'Biología, física y química' },
+  { id:'geografia',    emoji:'🌍',  label:'Geografía',    desc:'Países, capitales y accidentes' },
+  { id:'deportes',     emoji:'⚽',  label:'Deportes',     desc:'Atletas, equipos y disciplinas' },
+];
+
+const DIFFICULTIES = [
+  { id:'easy',   label:'Fácil',   color:'accentGreen',  icon:'◐', desc:'Para calentar motores' },
+  { id:'medium', label:'Medio',   color:'accentYellow', icon:'◑', desc:'Requiere concentración' },
+  { id:'hard',   label:'Difícil', color:'accentRed',    icon:'●', desc:'Solo para expertos' },
+];
+
+/* ─── PUZZLE DATA ───────────────────────────────────────── */
+const PUZZLE = {
+  groups: [
+    {
+      id: 0, label: "🟩 VERDE",
+      theme: "Capitales de América del Sur",
+      color: "green",
+      words: ["LIMA", "BOGOTÁ", "QUITO", "CARACAS"]
+    },
+    {
+      id: 1, label: "🟦 AZUL",
+      theme: "Planetas del Sistema Solar",
+      color: "blue",
+      words: ["MARTE", "VENUS", "SATURNO", "JÚPITER"]
+    },
+    {
+      id: 2, label: "🟨 AMARILLO",
+      theme: "Obras de Cervantes",
+      color: "yellow",
+      words: ["QUIJOTE", "NOVELAS", "GALATEA", "PERSILES"]
+    },
+    {
+      id: 3, label: "🟥 ROJO",
+      theme: "Instrumentos de cuerda",
+      color: "red",
+      words: ["VIOLÍN", "ARPA", "LAÚD", "CÍTARA"]
+    }
+  ]
+};
+
+/* shuffle deterministically for display */
+const ALL_WORDS = [
+  "LIMA","MARTE","QUIJOTE","VIOLÍN",
+  "BOGOTÁ","VENUS","NOVELAS","ARPA",
+  "QUITO","SATURNO","GALATEA","LAÚD",
+  "CARACAS","JÚPITER","PERSILES","CÍTARA"
+];
+
+/* ─── UTILS ─────────────────────────────────────────────── */
+function getGroupColor(groupId, tweak) {
+  const map = { green: tweak.accentGreen, blue: tweak.accentBlue, yellow: tweak.accentYellow, red: tweak.accentRed };
+  const colStr = PUZZLE.groups[groupId]?.color;
+  return map[colStr] || tweak.accentGreen;
+}
+function getWordGroup(word) {
+  return PUZZLE.groups.find(g => g.words.includes(word));
+}
+
+/* ─── SOCCER BALL + GOOOL ANIMATION ─────────────────────── */
+function NexoHexAnim({ colors, size = 200 }) {
+  const [tick, setTick] = React.useState(0);
+  const startRef = useRef(null);
+  const rafRef   = useRef(null);
+
+  useEffect(() => {
+    function frame(ts) {
+      if (!startRef.current) startRef.current = ts;
+      setTick(ts - startRef.current);
+      rafRef.current = requestAnimationFrame(frame);
+    }
+    rafRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const [GREEN, BLUE, YELLOW, RED] = colors;
+
+  // Spin
+  const rot = (tick / 8000) * 360;
+
+  // GOOOL cycle 5s
+  const CYCLE = 5000;
+  const t = (tick % CYCLE) / CYCLE;
+  function eio(t){ return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  let gooolP = 0, gooolA = 0;
+  if      (t >= 0.45 && t < 0.73) { gooolP = (t-0.45)/0.28; gooolA = 1; }
+  else if (t >= 0.73 && t < 0.84) { gooolP = 1; gooolA = 1; }
+  else if (t >= 0.84 && t < 0.96) { gooolP = 1; gooolA = 1 - eio((t-0.84)/0.12); }
+
+  // Soccer ball geometry helpers
+  const R  = size * 0.44;
+  const PR = size * 0.115; // pentagon circumradius
+  const HR = size * 0.135; // hexagon circumradius
+  const d1 = R * 0.54, d2 = R * 0.90, d3 = R * 1.04, d4 = R * 1.26;
+  const cx0 = size * 0.46, cy0 = size * 0.50;
+
+  function pPts(cx, cy, r, rotDeg) {
+    return Array.from({length:5}, (_,i) => {
+      const a = ((i*72) + rotDeg - 90) * Math.PI/180;
+      return `${(cx + r*Math.cos(a)).toFixed(2)},${(cy + r*Math.sin(a)).toFixed(2)}`;
+    }).join(' ');
+  }
+  function hPts(cx, cy, r, rotDeg) {
+    return Array.from({length:6}, (_,i) => {
+      const a = ((i*60) + rotDeg) * Math.PI/180;
+      return `${(cx + r*Math.cos(a)).toFixed(2)},${(cy + r*Math.sin(a)).toFixed(2)}`;
+    }).join(' ');
+  }
+
+  const PCOLS  = [GREEN, BLUE, YELLOW, RED, GREEN];
+  const PCOLS2 = [BLUE, YELLOW, RED, GREEN, BLUE];
+
+  const ballSz = size * 0.90;
+  const WORD   = '¡GOOOOOOOL!';
+  const LCOLS  = [YELLOW,GREEN,BLUE,YELLOW,RED,GREEN,BLUE,YELLOW,RED,GREEN,YELLOW];
+  const fSize  = size * 0.152;
+  const lw     = size * 0.160;
+  const sx     = size * 0.91;
+  const totalW = Math.round(size * 2.80);
+
+  return (
+    <div style={{ position:'relative', width:totalW+'px', height:size+'px', display:'flex', alignItems:'center' }}>
+
+      {/* Ball */}
+      <div style={{
+        width:ballSz+'px', height:ballSz+'px', flexShrink:0,
+        filter:`drop-shadow(0 0 ${size*0.07}px ${GREEN}44) drop-shadow(0 0 ${size*0.14}px ${BLUE}22)`,
+      }}>
+        <svg viewBox={`${-size/2} ${-size/2} ${size} ${size}`}
+          width={ballSz} height={ballSz}
+          style={{ transform:`rotate(${rot}deg)`, transformOrigin:'center', display:'block', overflow:'visible' }}>
+          <defs>
+            <clipPath id="sbc"><circle cx="0" cy="0" r={R}/></clipPath>
+            <radialGradient id="sbh" cx="35%" cy="28%" r="55%">
+              <stop offset="0%"  stopColor="white" stopOpacity="0.28"/>
+              <stop offset="45%" stopColor="white" stopOpacity="0.05"/>
+              <stop offset="100%" stopColor="black" stopOpacity="0.22"/>
+            </radialGradient>
+          </defs>
+          <g clipPath="url(#sbc)">
+            <circle cx="0" cy="0" r={R} fill="white"/>
+            {/* Ring-2 hexagons */}
+            {Array.from({length:5},(_,i) => {
+              const a=(i*72+36)*Math.PI/180;
+              return <polygon key={`h2${i}`} points={hPts(d3*Math.cos(a),d3*Math.sin(a),HR,i*72+36)} fill="white" stroke="#c8c8c8" strokeWidth="1.6" strokeLinejoin="round"/>;
+            })}
+            {/* Ring-2 pentagons */}
+            {Array.from({length:5},(_,i) => {
+              const a=(i*72)*Math.PI/180;
+              return <polygon key={`p2${i}`} points={pPts(d4*Math.cos(a),d4*Math.sin(a),PR,i*72+36)} fill={PCOLS2[i]} stroke="white" strokeWidth="2" strokeLinejoin="round"/>;
+            })}
+            {/* Ring-1 hexagons */}
+            {Array.from({length:5},(_,i) => {
+              const a=(i*72+36)*Math.PI/180;
+              return <polygon key={`h1${i}`} points={hPts(d1*Math.cos(a),d1*Math.sin(a),HR,i*72+36)} fill="white" stroke="#c8c8c8" strokeWidth="1.6" strokeLinejoin="round"/>;
+            })}
+            {/* Ring-1 pentagons */}
+            {Array.from({length:5},(_,i) => {
+              const a=(i*72)*Math.PI/180;
+              return <polygon key={`p1${i}`} points={pPts(d2*Math.cos(a),d2*Math.sin(a),PR,i*72)} fill={PCOLS[i]} stroke="white" strokeWidth="2.5" strokeLinejoin="round"/>;
+            })}
+            {/* Center pentagon */}
+            <polygon points={pPts(0,0,PR,0)} fill={BLUE} stroke="white" strokeWidth="2.5" strokeLinejoin="round"/>
+            <circle cx="0" cy="0" r={R} fill="url(#sbh)"/>
+          </g>
+          <circle cx="0" cy="0" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5"/>
+        </svg>
+      </div>
+
+      {/* GOOOL */}
+      {gooolA > 0 && (
+        <div style={{ position:'absolute', left:sx+'px', top:'50%', transform:'translateY(-50%)', display:'flex', gap:'0px' }}>
+          {WORD.split('').map((ch, i) => {
+            const lp = clamp((gooolP - i/WORD.length)/(1/WORD.length), 0, 1);
+            if (lp <= 0) return null;
+            const ep = eio(lp);
+            const col = LCOLS[i];
+            return (
+              <span key={i} style={{
+                fontSize: fSize+'px', fontWeight:900,
+                fontFamily:'Outfit, Arial Black, sans-serif',
+                color: col,
+                textShadow:`0 0 ${size*0.065}px ${col}, 0 0 ${size*0.13}px ${col}66`,
+                WebkitTextStroke:`${size*0.011}px rgba(0,0,0,0.5)`,
+                opacity: ep * gooolA,
+                transform:`translateY(${(1-ep)*(-size*0.10)}px) scale(${0.2+ep*0.8})`,
+                display:'inline-block', lineHeight:1,
+              }}>{ch}</span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── SCREENS ───────────────────────────────────────────── */
+
+/* HOME SCREEN */
+function HomeScreen({ onPlay, onHowTo, tweak }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
+
+  const letters = ['N','E','X','O'];
+  const colors = [tweak.accentGreen, tweak.accentBlue, tweak.accentYellow, tweak.accentRed];
+
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: tweak.bgColor,
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'space-between',
+      padding:'0 0 36px 0',
+      overflow:'hidden',
+      position:'relative',
+    }}>
+      {/* Radial ambient */}
+      <div style={{
+        position:'absolute', top:'-60px', left:'50%',
+        transform:'translateX(-50%)',
+        width:'340px', height:'340px',
+        background:`radial-gradient(ellipse, ${tweak.accentBlue}33 0%, ${tweak.accentGreen}18 40%, transparent 70%)`,
+        filter:'blur(32px)',
+        pointerEvents:'none',
+      }} />
+
+      {/* Top section */}
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0px', paddingTop:'48px', flex:1, justifyContent:'center' }}>
+
+        {/* Decorative top bar */}
+        <div style={{
+          display:'flex', gap:'6px', marginBottom:'28px',
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(-12px)',
+          transition:'all 0.6s cubic-bezier(0.34,1.56,0.64,1)',
+        }}>
+          {colors.map((c,i) => (
+            <div key={i} style={{
+              width:'28px', height:'4px',
+              background: c,
+              borderRadius:'4px',
+              boxShadow: `0 0 8px ${c}`,
+            }}/>
+          ))}
+        </div>
+
+        {/* NEXO Logo — letter-by-letter */}
+        <div style={{ display:'flex', gap:'2px', marginBottom:'6px' }}>
+          {letters.map((l,i) => (
+            <div key={l} style={{
+              fontSize:'80px',
+              fontWeight:'900',
+              fontFamily: tweak.fontDisplay + ', Outfit, sans-serif',
+              color: colors[i],
+              lineHeight:1,
+              letterSpacing:'-2px',
+              textShadow: `0 0 40px ${colors[i]}88, 0 0 80px ${colors[i]}44`,
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.9)',
+              transition: `all 0.7s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s`,
+            }}>{l}</div>
+          ))}
+        </div>
+
+        {/* Tagline */}
+        <div style={{
+          textAlign:'center',
+          padding:'0 24px',
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(10px)',
+          transition:'all 0.7s ease 0.4s',
+        }}>
+          <p style={{
+            fontSize:'14px',
+            fontFamily:'DM Sans, sans-serif',
+            fontWeight:'300',
+            color:'oklch(0.75 0.01 240)',
+            letterSpacing:'0.04em',
+            lineHeight:'1.5',
+          }}>
+            Conecta los conceptos.<br />
+            <span style={{ fontStyle:'italic', color:'oklch(0.85 0.01 240)' }}>Desafía tu mente.</span>
+          </p>
+        </div>
+
+        {/* Animated hex ball + GOOOL */}
+        <div style={{
+          marginTop:'16px',
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+          transition:'all 0.7s ease 0.5s',
+          width:'100%',
+          display:'flex',
+          justifyContent:'center',
+        }}>
+          <NexoHexAnim colors={colors} size={120} />
+        </div>
+
+        {/* Stats row */}
+        <div style={{
+          display:'flex', gap:'24px', marginTop:'18px',
+          opacity: mounted ? 1 : 0,
+          transition:'all 0.7s ease 0.6s',
+        }}>
+          {[['12K+','Jugadores'],['500+','Puzzles'],['4','Niveles']].map(([val,lbl]) => (
+            <div key={lbl} style={{ textAlign:'center' }}>
+              <div style={{ fontSize:'18px', fontWeight:'700', color:'white', lineHeight:1 }}>{val}</div>
+              <div style={{ fontSize:'10px', color:'oklch(0.55 0.01 240)', fontFamily:'DM Sans,sans-serif', marginTop:'2px', letterSpacing:'0.06em' }}>{lbl.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom buttons */}
+      <div style={{
+        width:'100%', padding:'0 24px',
+        display:'flex', flexDirection:'column', gap:'10px',
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(20px)',
+        transition:'all 0.7s ease 0.7s',
+      }}>
+        <PrimaryButton
+          label="Jugar ahora"
+          gradient={`linear-gradient(135deg, ${tweak.accentGreen}, ${tweak.accentBlue})`}
+          glowColor={tweak.accentGreen}
+          onClick={onPlay}
+          tweak={tweak}
+        />
+        <SecondaryButton
+          label="Cómo jugar"
+          onClick={onHowTo}
+          tweak={tweak}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─── THEME SELECTION SCREEN ────────────────────────────── */
+function ThemeSelectScreen({ onBack, onPlay, tweak }) {
+  const [mounted, setMounted] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState(null);
+  const [selectedDiff, setSelectedDiff] = useState('easy');
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
+
+  const diffColor = (d) => tweak[DIFFICULTIES.find(x => x.id === d).color];
+  const activeDiff = DIFFICULTIES.find(d => d.id === selectedDiff);
+
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: tweak.bgColor,
+      display:'flex', flexDirection:'column',
+      overflow:'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display:'flex', alignItems:'center', gap:'12px',
+        padding:'16px 20px 10px',
+      }}>
+        <button onClick={onBack} style={{
+          background:'none', border:'none', cursor:'pointer',
+          color:'#6b7280', fontSize:'22px', padding:'4px',
+          display:'flex', alignItems:'center',
+        }}>←</button>
+        <div>
+          <h1 style={{ fontSize:'18px', fontWeight:'800', color:'white', letterSpacing:'-0.3px', lineHeight:1.1 }}>
+            Elige tu desafío
+          </h1>
+          <p style={{ fontSize:'11px', color:'#4b5563', fontFamily:'DM Sans, sans-serif', marginTop:'2px' }}>
+            Tema y dificultad
+          </p>
+        </div>
+      </div>
+
+      <div style={{ height:'1px', background:'#1f2937', margin:'0 20px' }}/>
+
+      {/* Scrollable body */}
+      <div style={{ flex:1, overflowY:'auto', padding:'14px 16px 0' }}>
+
+        {/* Difficulty selector */}
+        <p style={{
+          fontSize:'10px', fontWeight:'700', letterSpacing:'0.10em',
+          color:'#374151', marginBottom:'8px',
+        }}>DIFICULTAD</p>
+
+        <div style={{ display:'flex', gap:'6px', marginBottom:'20px' }}>
+          {DIFFICULTIES.map((d, i) => {
+            const col = tweak[d.color];
+            const active = selectedDiff === d.id;
+            return (
+              <button key={d.id} onClick={() => setSelectedDiff(d.id)} style={{
+                flex:1, padding:'10px 6px',
+                background: active ? `${col}1a` : '#111827',
+                border: `1.5px solid ${active ? col : '#1f2937'}`,
+                borderRadius: tweak.roundness + 'px',
+                cursor:'pointer',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:'4px',
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+                transition: `all 0.4s ease ${i*0.07}s`,
+              }}>
+                <div style={{
+                  width:'28px', height:'28px', borderRadius:'8px',
+                  background: active ? `${col}33` : '#1f2937',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:'14px', color: active ? col : '#4b5563',
+                  fontWeight:'900',
+                  transition:'all 0.2s ease',
+                }}>{d.icon}</div>
+                <span style={{
+                  fontSize:'11px', fontWeight:'700',
+                  color: active ? col : '#6b7280',
+                  letterSpacing:'0.02em',
+                  transition:'all 0.2s ease',
+                }}>{d.label}</span>
+                {active && (
+                  <span style={{
+                    fontSize:'9px', color:`${col}bb`,
+                    fontFamily:'DM Sans, sans-serif',
+                    textAlign:'center', lineHeight:'1.2',
+                  }}>{d.desc}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Theme grid label */}
+        <p style={{
+          fontSize:'10px', fontWeight:'700', letterSpacing:'0.10em',
+          color:'#374151', marginBottom:'8px',
+        }}>CATEGORÍA</p>
+
+        {/* Theme grid */}
+        <div style={{
+          display:'grid', gridTemplateColumns:'1fr 1fr',
+          gap:'8px', paddingBottom:'16px',
+        }}>
+          {THEMES.map((theme, i) => {
+            const active = selectedTheme === theme.id;
+            const col = diffColor(selectedDiff);
+            return (
+              <button key={theme.id} onClick={() => setSelectedTheme(active ? null : theme.id)} style={{
+                background: active ? `${col}18` : '#0f1117',
+                border: `1.5px solid ${active ? col : '#1a1f2e'}`,
+                borderRadius: tweak.roundness + 'px',
+                padding:'14px 12px',
+                cursor:'pointer',
+                display:'flex', flexDirection:'column', alignItems:'flex-start', gap:'6px',
+                textAlign:'left',
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? 'scale(1)' : 'scale(0.94)',
+                transition: `all 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.05 + 0.1}s`,
+                position:'relative', overflow:'hidden',
+              }}>
+                {/* Glow accent for active */}
+                {active && (
+                  <div style={{
+                    position:'absolute', top:'-20px', right:'-20px',
+                    width:'70px', height:'70px',
+                    background:`${col}22`,
+                    borderRadius:'50%', filter:'blur(16px)',
+                    pointerEvents:'none',
+                  }}/>
+                )}
+                <div style={{
+                  fontSize:'26px', lineHeight:1,
+                  filter: active ? 'none' : 'grayscale(0.2)',
+                }}>{theme.emoji}</div>
+                <div>
+                  <div style={{
+                    fontSize:'13px', fontWeight:'700',
+                    color: active ? col : 'white',
+                    transition:'color 0.2s ease',
+                  }}>{theme.label}</div>
+                  <div style={{
+                    fontSize:'10px', color:'#374151',
+                    fontFamily:'DM Sans, sans-serif', marginTop:'2px',
+                    lineHeight:'1.3',
+                  }}>{theme.desc}</div>
+                </div>
+                {active && (
+                  <div style={{
+                    position:'absolute', top:'8px', right:'8px',
+                    width:'16px', height:'16px', borderRadius:'50%',
+                    background: col,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:'9px', color:'#000', fontWeight:'900',
+                  }}>✓</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{ padding:'12px 16px 28px', display:'flex', flexDirection:'column', gap:'8px' }}>
+        {selectedTheme && (
+          <div style={{
+            display:'flex', alignItems:'center', gap:'8px',
+            padding:'8px 12px',
+            background:`${diffColor(selectedDiff)}18`,
+            border:`1px solid ${diffColor(selectedDiff)}33`,
+            borderRadius: tweak.roundness + 'px',
+            animation:'popIn 0.3s ease',
+          }}>
+            <span style={{ fontSize:'18px' }}>{THEMES.find(t=>t.id===selectedTheme)?.emoji}</span>
+            <div>
+              <div style={{ fontSize:'12px', fontWeight:'700', color:'white' }}>
+                {THEMES.find(t=>t.id===selectedTheme)?.label} · {activeDiff.label}
+              </div>
+              <div style={{ fontSize:'10px', color:'#4b5563', fontFamily:'DM Sans, sans-serif' }}>
+                16 palabras · 4 grupos ocultos
+              </div>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => selectedTheme && onPlay({ theme: selectedTheme, difficulty: selectedDiff })}
+          disabled={!selectedTheme}
+          style={{
+            width:'100%', padding:'15px',
+            background: selectedTheme
+              ? `linear-gradient(135deg, ${diffColor(selectedDiff)}, ${tweak.accentBlue})`
+              : '#111827',
+            border:'none',
+            borderRadius: tweak.roundness + 'px',
+            color: selectedTheme ? 'white' : '#374151',
+            fontFamily:'Outfit, sans-serif', fontSize:'14px', fontWeight:'800',
+            cursor: selectedTheme ? 'pointer' : 'default',
+            letterSpacing:'0.06em',
+            boxShadow: selectedTheme ? `0 4px 24px ${diffColor(selectedDiff)}44` : 'none',
+            transition:'all 0.3s ease',
+          }}
+        >
+          {selectedTheme ? `COMENZAR PUZZLE →` : 'ELIGE UNA CATEGORÍA'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* GAME SCREEN */
+function GameScreen({ onBack, config, tweak }) {
+  const [selected, setSelected] = useState([]);
+  const [solved, setSolved] = useState([]);
+  const [mistakes, setMistakes] = useState(0);
+  const [shake, setShake] = useState(false);
+  const [celebrating, setCelebrating] = useState(null);
+  const [gameWon, setGameWon] = useState(false);
+  const [words, setWords] = useState(ALL_WORDS);
+  const [hintsLeft, setHintsLeft] = useState(3);
+  const [hintedWords, setHintedWords] = useState([]);
+  const [showHintToast, setShowHintToast] = useState(false);
+  const [wrongPulse, setWrongPulse] = useState(false);
+  const maxMistakes = 4;
+
+  const themeEmoji = config ? THEMES.find(t => t.id === config.theme)?.emoji : '🧩';
+  const themeLabel = config ? THEMES.find(t => t.id === config.theme)?.label : 'General';
+  const diffLabel = config ? DIFFICULTIES.find(d => d.id === config.difficulty)?.label : 'Fácil';
+  const diffColorKey = config ? DIFFICULTIES.find(d => d.id === config.difficulty)?.color : 'accentGreen';
+  const diffColor = tweak[diffColorKey];
+
+  const colors = {
+    green: tweak.accentGreen, blue: tweak.accentBlue,
+    yellow: tweak.accentYellow, red: tweak.accentRed
+  };
+
+  function useHint() {
+    if (hintsLeft <= 0) return;
+    // Reveal one word from the first unsolved group
+    const unsolvedGroup = PUZZLE.groups.find(g => !solved.find(s => s.id === g.id));
+    if (!unsolvedGroup) return;
+    const unrevealed = unsolvedGroup.words.filter(w => !hintedWords.includes(w) && words.includes(w));
+    if (unrevealed.length === 0) return;
+    const pick = unrevealed[0];
+    setHintedWords(h => [...h, pick]);
+    setHintsLeft(h => h - 1);
+    setShowHintToast(true);
+    setTimeout(() => setShowHintToast(false), 2000);
+  }
+
+  function toggleWord(word) {
+    if (solved.some(g => g.words.includes(word))) return;
+    if (selected.includes(word)) {
+      setSelected(s => s.filter(w => w !== word));
+    } else if (selected.length < 4) {
+      setSelected(s => [...s, word]);
+    }
+  }
+
+  function submit() {
+    if (selected.length !== 4) return;
+    const group = PUZZLE.groups.find(g =>
+      selected.every(w => g.words.includes(w)) && g.words.every(w => selected.includes(w))
+    );
+    if (group) {
+      setCelebrating(group.id);
+      setTimeout(() => {
+        setSolved(s => [...s, group]);
+        setWords(w => w.filter(wd => !group.words.includes(wd)));
+        setSelected([]);
+        setCelebrating(null);
+        if (solved.length + 1 === 4) setGameWon(true);
+      }, 800);
+    } else {
+      setShake(true);
+      setWrongPulse(true);
+      setMistakes(m => m + 1);
+      setTimeout(() => { setShake(false); setWrongPulse(false); setSelected([]); }, 700);
+    }
+  }
+
+  function shuffle() {
+    setWords(w => [...w].sort(() => Math.random() - 0.5));
+  }
+
+  const r = tweak.roundness;
+  const remaining = maxMistakes - mistakes;
+
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: tweak.bgColor,
+      display:'flex', flexDirection:'column',
+      overflow:'hidden', position:'relative',
+    }}>
+
+      {/* Hint toast */}
+      {showHintToast && (
+        <div style={{
+          position:'absolute', top:'70px', left:'50%',
+          transform:'translateX(-50%)',
+          background:`${tweak.accentYellow}ee`,
+          color:'#000', borderRadius:'20px',
+          padding:'6px 16px', fontSize:'12px', fontWeight:'700',
+          zIndex:20, whiteSpace:'nowrap',
+          animation:'popIn 0.3s ease',
+          boxShadow:`0 4px 20px ${tweak.accentYellow}66`,
+        }}>💡 Pista revelada</div>
+      )}
+
+      {/* Header */}
+      <div style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'12px 16px 8px',
+      }}>
+        <button onClick={onBack} style={{
+          background:'none', border:'none', cursor:'pointer',
+          color:'#6b7280', fontSize:'22px', lineHeight:1,
+          padding:'4px', display:'flex', alignItems:'center',
+        }}>←</button>
+
+        {/* Center: logo + theme badge */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+          <div style={{ display:'flex', gap:'1px' }}>
+            {['N','E','X','O'].map((l,i) => (
+              <span key={l} style={{
+                fontSize:'20px', fontWeight:'900',
+                color: Object.values(colors)[i],
+                letterSpacing:'-1px',
+                textShadow:`0 0 10px ${Object.values(colors)[i]}88`,
+              }}>{l}</span>
+            ))}
+          </div>
+          {config && (
+            <div style={{
+              display:'flex', alignItems:'center', gap:'4px',
+              background:`${diffColor}18`,
+              border:`1px solid ${diffColor}33`,
+              borderRadius:'8px', padding:'1px 7px',
+            }}>
+              <span style={{ fontSize:'9px' }}>{themeEmoji}</span>
+              <span style={{ fontSize:'9px', fontWeight:'700', color: diffColor, letterSpacing:'0.04em' }}>
+                {themeLabel} · {diffLabel}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Hint button */}
+        <button onClick={useHint} disabled={hintsLeft === 0} style={{
+          background: hintsLeft > 0 ? `${tweak.accentYellow}22` : 'transparent',
+          border: `1.5px solid ${hintsLeft > 0 ? tweak.accentYellow + '55' : '#1f2937'}`,
+          borderRadius:'10px', padding:'5px 8px',
+          cursor: hintsLeft > 0 ? 'pointer' : 'default',
+          display:'flex', flexDirection:'column', alignItems:'center', gap:'1px',
+          transition:'all 0.2s ease',
+        }}>
+          <span style={{ fontSize:'14px', lineHeight:1, filter: hintsLeft === 0 ? 'grayscale(1)' : 'none' }}>💡</span>
+          <span style={{
+            fontSize:'8px', fontWeight:'700',
+            color: hintsLeft > 0 ? tweak.accentYellow : '#374151',
+            letterSpacing:'0.04em',
+          }}>{hintsLeft}/3</span>
+        </button>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height:'1px', background:'#1a1f2e', margin:'0 16px' }}/>
+
+      {/* Attempts bar */}
+      <div style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'8px 16px 6px',
+      }}>
+        <span style={{
+          fontSize:'10px', fontWeight:'700', letterSpacing:'0.08em',
+          color:'#374151',
+        }}>INTENTOS</span>
+        <div style={{ display:'flex', gap:'5px', alignItems:'center' }}>
+          {Array.from({length: maxMistakes}).map((_,i) => (
+            <div key={i} style={{
+              width:'24px', height:'8px',
+              borderRadius:'4px',
+              background: i < mistakes
+                ? (wrongPulse && i === mistakes-1 ? tweak.accentRed : tweak.accentRed + 'cc')
+                : '#1f2937',
+              boxShadow: i < mistakes ? `0 0 6px ${tweak.accentRed}88` : 'none',
+              transition:'all 0.3s ease',
+              transform: (wrongPulse && i === mistakes-1) ? 'scaleX(1.1)' : 'scaleX(1)',
+            }}/>
+          ))}
+          <span style={{
+            fontSize:'10px', fontWeight:'700', marginLeft:'4px',
+            color: remaining <= 1 ? tweak.accentRed : '#6b7280',
+          }}>{remaining} left</span>
+        </div>
+      </div>
+
+      {/* Solved groups */}
+      <div style={{ padding:'0 12px', display:'flex', flexDirection:'column', gap:'5px' }}>
+        {solved.map(group => (
+          <div key={group.id} style={{
+            borderRadius: r + 'px',
+            background: `linear-gradient(135deg, ${colors[group.color]}, ${colors[group.color]}cc)`,
+            padding:'8px 12px',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            animation:'popIn 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+          }}>
+            <div>
+              <span style={{ fontSize:'10px', fontWeight:'800', color:'rgba(0,0,0,0.55)', letterSpacing:'0.08em', display:'block' }}>
+                {group.theme.toUpperCase()}
+              </span>
+              <span style={{ fontSize:'12px', fontWeight:'600', color:'rgba(0,0,0,0.80)' }}>
+                {group.words.join(' · ')}
+              </span>
+            </div>
+            <div style={{
+              width:'20px', height:'20px', borderRadius:'50%',
+              background:'rgba(0,0,0,0.15)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:'10px',
+            }}>✓</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Word Grid */}
+      <div style={{ flex:1, padding:'6px 12px 0', overflow:'hidden' }}>
+        <div style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(4, 1fr)',
+          gap:'5px',
+          animation: shake ? 'shakeGrid 0.5s ease' : 'none',
+        }}>
+          {words.map(word => {
+            const isSel = selected.includes(word);
+            const wGroup = getWordGroup(word);
+            const isCelebrating = celebrating !== null && wGroup?.id === celebrating;
+            const isHintWord = hintedWords.includes(word);
+            return (
+              <button key={word} onClick={() => toggleWord(word)} style={{
+                background: isCelebrating
+                  ? colors[wGroup.color]
+                  : isSel
+                    ? `${tweak.accentBlue}2a`
+                    : isHintWord
+                      ? `${tweak.accentYellow}15`
+                      : '#111827',
+                border: `1.5px solid ${
+                  isCelebrating ? 'transparent'
+                  : isSel ? tweak.accentBlue
+                  : isHintWord ? tweak.accentYellow + '66'
+                  : '#1f2937'
+                }`,
+                borderRadius: (parseInt(r)*0.65) + 'px',
+                padding:'8px 2px',
+                cursor:'pointer',
+                display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center',
+                gap:'2px',
+                fontFamily:'Outfit, sans-serif',
+                fontSize:'10px', fontWeight:'800',
+                color: isCelebrating ? 'rgba(0,0,0,0.85)'
+                  : isSel ? 'white'
+                  : isHintWord ? tweak.accentYellow
+                  : '#d1d5db',
+                letterSpacing:'0.04em',
+                boxShadow: isSel
+                  ? `0 0 0 1px ${tweak.accentBlue}, 0 4px 16px ${tweak.accentBlue}33`
+                  : isHintWord ? `0 0 8px ${tweak.accentYellow}33` : 'none',
+                transition:'all 0.15s ease',
+                transform: isSel ? 'scale(0.95)' : 'scale(1)',
+                minHeight:'46px',
+              }}>
+                {isHintWord && !isSel && (
+                  <span style={{ fontSize:'8px', opacity:0.6 }}>💡</span>
+                )}
+                {word}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom Controls */}
+      <div style={{
+        padding:'8px 12px 24px',
+        display:'flex', flexDirection:'column', gap:'7px',
+      }}>
+        <div style={{ display:'flex', gap:'7px' }}>
+          <button onClick={shuffle} style={{
+            flex:1, padding:'10px',
+            background:'transparent',
+            border:'1.5px solid #1f2937',
+            borderRadius: r + 'px',
+            color:'#4b5563',
+            fontFamily:'Outfit, sans-serif', fontSize:'12px', fontWeight:'600',
+            cursor:'pointer', letterSpacing:'0.03em',
+            transition:'all 0.2s ease',
+          }}>⇄ Mezclar</button>
+
+          <button onClick={() => setSelected([])} style={{
+            flex:1, padding:'10px',
+            background:'transparent',
+            border:'1.5px solid #1f2937',
+            borderRadius: r + 'px',
+            color:'#4b5563',
+            fontFamily:'Outfit, sans-serif', fontSize:'12px', fontWeight:'600',
+            cursor:'pointer', letterSpacing:'0.03em',
+            transition:'all 0.2s ease',
+          }}>✕ Limpiar</button>
+        </div>
+
+        <button onClick={submit} disabled={selected.length !== 4} style={{
+          width:'100%', padding:'13px',
+          background: selected.length === 4
+            ? `linear-gradient(135deg, ${tweak.accentGreen}, ${tweak.accentBlue})`
+            : '#0f1117',
+          border:'none',
+          borderRadius: r + 'px',
+          color: selected.length === 4 ? 'white' : '#374151',
+          fontFamily:'Outfit, sans-serif', fontSize:'13px', fontWeight:'800',
+          cursor: selected.length === 4 ? 'pointer' : 'default',
+          letterSpacing:'0.06em',
+          boxShadow: selected.length === 4 ? `0 4px 24px ${tweak.accentGreen}44` : 'none',
+          transition:'all 0.25s ease',
+          transform: selected.length === 4 ? 'scale(1)' : 'scale(0.98)',
+        }}>
+          {selected.length === 4 ? 'CONFIRMAR →' : `SELECCIONA ${4 - selected.length} MÁS`}
+        </button>
+      </div>
+
+      {/* WIN OVERLAY */}
+      {gameWon && <WinOverlay onBack={onBack} tweak={tweak} colors={colors} config={config} />}
+    </div>
+  );
+}
+
+/* WIN OVERLAY */
+function WinOverlay({ onBack, tweak, colors, config }) {
+  const themeEmoji = config ? THEMES.find(t => t.id === config.theme)?.emoji : '🧩';
+  const themeLabel = config ? THEMES.find(t => t.id === config.theme)?.label : 'General';
+  const diffLabel  = config ? DIFFICULTIES.find(d => d.id === config.difficulty)?.label : 'Fácil';
+
+  return (
+    <div style={{
+      position:'absolute', inset:0,
+      background:'rgba(8,8,12,0.94)',
+      backdropFilter:'blur(12px)',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      gap:'12px', zIndex:50,
+      animation:'fadeIn 0.4s ease',
+      padding:'28px',
+    }}>
+      {/* Confetti glow */}
+      <div style={{
+        position:'absolute', top:'10%', left:'50%',
+        transform:'translateX(-50%)',
+        width:'260px', height:'260px',
+        background:`radial-gradient(ellipse, ${tweak.accentGreen}22 0%, ${tweak.accentBlue}12 50%, transparent 70%)`,
+        filter:'blur(30px)', pointerEvents:'none',
+      }}/>
+
+      <div style={{ fontSize:'48px', animation:'popIn 0.5s 0.1s both' }}>🏆</div>
+
+      <div style={{ display:'flex', gap:'1px', animation:'popIn 0.5s 0.2s both' }}>
+        {['N','E','X','O'].map((l,i) => (
+          <span key={l} style={{
+            fontSize:'44px', fontWeight:'900',
+            color:Object.values(colors)[i],
+            textShadow:`0 0 24px ${Object.values(colors)[i]}99`,
+            letterSpacing:'-1px',
+          }}>{l}</span>
+        ))}
+      </div>
+
+      <div style={{ textAlign:'center', animation:'popIn 0.5s 0.3s both' }}>
+        <p style={{ color:'white', fontWeight:'800', fontSize:'18px', marginBottom:'4px' }}>
+          ¡Puzzle resuelto!
+        </p>
+        {config && (
+          <div style={{
+            display:'inline-flex', alignItems:'center', gap:'5px',
+            background:'#111827', border:'1px solid #1f2937',
+            borderRadius:'10px', padding:'4px 10px', marginTop:'4px',
+          }}>
+            <span style={{ fontSize:'12px' }}>{themeEmoji}</span>
+            <span style={{ fontSize:'11px', color:'#6b7280', fontFamily:'DM Sans, sans-serif' }}>
+              {themeLabel} · {diffLabel}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Score row */}
+      <div style={{
+        display:'flex', gap:'16px',
+        padding:'14px 20px',
+        background:'#0f1117',
+        border:'1px solid #1f2937',
+        borderRadius: tweak.roundness + 'px',
+        width:'100%',
+        animation:'popIn 0.5s 0.4s both',
+      }}>
+        {[['4','Grupos'],['16','Palabras'],['✓','Completo']].map(([val,lbl]) => (
+          <div key={lbl} style={{ flex:1, textAlign:'center' }}>
+            <div style={{ fontSize:'20px', fontWeight:'800', color:'white' }}>{val}</div>
+            <div style={{ fontSize:'9px', color:'#374151', fontFamily:'DM Sans, sans-serif', letterSpacing:'0.06em', marginTop:'2px' }}>{lbl.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:'8px', width:'100%', animation:'popIn 0.5s 0.5s both' }}>
+        <button onClick={onBack} style={{
+          flex:1, padding:'13px',
+          background:'transparent',
+          border:'1.5px solid #1f2937',
+          borderRadius: tweak.roundness + 'px',
+          color:'#6b7280',
+          fontFamily:'Outfit, sans-serif', fontSize:'12px', fontWeight:'700',
+          cursor:'pointer', letterSpacing:'0.04em',
+        }}>← Inicio</button>
+        <button onClick={onBack} style={{
+          flex:2, padding:'13px',
+          background:`linear-gradient(135deg, ${tweak.accentGreen}, ${tweak.accentBlue})`,
+          border:'none',
+          borderRadius: tweak.roundness + 'px',
+          color:'white',
+          fontFamily:'Outfit, sans-serif', fontSize:'12px', fontWeight:'800',
+          cursor:'pointer', letterSpacing:'0.05em',
+          boxShadow:`0 4px 20px ${tweak.accentGreen}44`,
+        }}>Otro puzzle →</button>
+      </div>
+    </div>
+  );
+}
+
+/* HOW TO PLAY SCREEN */
+function HowToScreen({ onBack, tweak }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
+
+  const steps = [
+    {
+      icon: '◉',
+      color: tweak.accentBlue,
+      title: 'Lee las 16 palabras',
+      desc: 'Verás una cuadrícula con 16 conceptos o palabras mezcladas.',
+    },
+    {
+      icon: '◈',
+      color: tweak.accentGreen,
+      title: 'Encuentra los 4 grupos',
+      desc: 'Cada grupo de 4 palabras comparte algo en común: tema, categoría o patrón.',
+    },
+    {
+      icon: '◆',
+      color: tweak.accentYellow,
+      title: 'Selecciona y confirma',
+      desc: 'Toca 4 palabras y presiona CONFIRMAR. Verde = correcto, rojo = error.',
+    },
+    {
+      icon: '★',
+      color: tweak.accentRed,
+      title: 'Solo 4 errores permitidos',
+      desc: 'Si cometes 4 errores, el puzzle se revela. ¡Cuida cada movimiento!',
+    },
+  ];
+
+  const groupColors = [tweak.accentGreen, tweak.accentBlue, tweak.accentYellow, tweak.accentRed];
+  const groupLabels = ['Más fácil', 'Fácil', 'Difícil', 'Muy difícil'];
+
+  return (
+    <div style={{
+      width:'100%', height:'100%',
+      background: tweak.bgColor,
+      display:'flex', flexDirection:'column',
+      overflow:'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display:'flex', alignItems:'center', gap:'12px',
+        padding:'16px 20px 12px',
+      }}>
+        <button onClick={onBack} style={{
+          background:'none', border:'none', cursor:'pointer',
+          color:'oklch(0.55 0.01 240)', fontSize:'22px',
+          padding:'4px', display:'flex', alignItems:'center',
+        }}>←</button>
+        <h1 style={{
+          fontSize:'20px', fontWeight:'800',
+          color:'white', letterSpacing:'-0.3px',
+        }}>Cómo jugar</h1>
+      </div>
+
+      <div style={{ height:'1px', background:'oklch(0.18 0.01 240)', margin:'0 20px' }}/>
+
+      {/* Scrollable content */}
+      <div style={{ flex:1, overflowY:'auto', padding:'16px 20px 24px' }}>
+
+        {/* Steps */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'12px', marginBottom:'24px' }}>
+          {steps.map((step, i) => (
+            <div key={i} style={{
+              display:'flex', gap:'14px', alignItems:'flex-start',
+              background:'oklch(0.14 0.01 240)',
+              borderRadius: tweak.roundness + 'px',
+              padding:'14px 16px',
+              border:`1px solid oklch(0.20 0.01 240)`,
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? 'translateX(0)' : 'translateX(-16px)',
+              transition:`all 0.5s ease ${i*0.1 + 0.1}s`,
+            }}>
+              <div style={{
+                width:'36px', height:'36px', borderRadius:'10px',
+                background: `${step.color}22`,
+                border: `1.5px solid ${step.color}55`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:'16px', color: step.color,
+                flexShrink:0,
+              }}>{step.icon}</div>
+              <div>
+                <div style={{
+                  fontSize:'13px', fontWeight:'700',
+                  color:'white', marginBottom:'4px',
+                }}>{step.title}</div>
+                <div style={{
+                  fontSize:'12px', color:'oklch(0.55 0.01 240)',
+                  fontFamily:'DM Sans, sans-serif', lineHeight:'1.5',
+                }}>{step.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Difficulty legend */}
+        <div style={{
+          background:'oklch(0.12 0.01 240)',
+          borderRadius: tweak.roundness + 'px',
+          padding:'16px',
+          border:'1px solid oklch(0.18 0.01 240)',
+          opacity: mounted ? 1 : 0,
+          transition:'all 0.5s ease 0.5s',
+          marginBottom:'16px',
+        }}>
+          <p style={{
+            fontSize:'11px', fontWeight:'700',
+            color:'oklch(0.45 0.01 240)', letterSpacing:'0.08em',
+            marginBottom:'12px',
+          }}>DIFICULTAD DE GRUPOS</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+            {groupColors.map((col, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{
+                  width:'28px', height:'10px',
+                  borderRadius:'4px', background: col,
+                  boxShadow:`0 0 8px ${col}88`,
+                  flexShrink:0,
+                }}/>
+                <span style={{
+                  fontSize:'12px', fontFamily:'DM Sans, sans-serif',
+                  color:'oklch(0.65 0.01 240)',
+                }}>{groupLabels[i]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tip */}
+        <div style={{
+          background:`${tweak.accentYellow}11`,
+          border:`1px solid ${tweak.accentYellow}33`,
+          borderRadius: tweak.roundness + 'px',
+          padding:'12px 14px',
+          opacity: mounted ? 1 : 0,
+          transition:'all 0.5s ease 0.6s',
+        }}>
+          <p style={{
+            fontSize:'12px', fontFamily:'DM Sans, sans-serif',
+            color:`${tweak.accentYellow}`, fontWeight:'500',
+            lineHeight:'1.5',
+          }}>
+            💡 <strong>Consejo:</strong> Cuidado con las palabras trampa que parecen pertenecer a dos grupos diferentes.
+          </p>
+        </div>
+      </div>
+
+      {/* Play button */}
+      <div style={{ padding:'0 20px 32px' }}>
+        <PrimaryButton
+          label="¡Entendido, jugar!"
+          gradient={`linear-gradient(135deg, ${tweak.accentGreen}, ${tweak.accentBlue})`}
+          glowColor={tweak.accentGreen}
+          onClick={onBack}
+          tweak={tweak}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─── SHARED COMPONENTS ─────────────────────────────────── */
+function PrimaryButton({ label, gradient, glowColor, onClick, tweak }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width:'100%', padding:'16px',
+        background: gradient,
+        border:'none',
+        borderRadius: tweak.roundness + 'px',
+        color:'white',
+        fontFamily:'Outfit, sans-serif', fontSize:'15px', fontWeight:'800',
+        cursor:'pointer', letterSpacing:'0.06em',
+        boxShadow: hover ? `0 8px 40px ${glowColor}66` : `0 4px 20px ${glowColor}44`,
+        transform: hover ? 'scale(1.015)' : 'scale(1)',
+        transition:'all 0.2s ease',
+      }}
+    >{label}</button>
+  );
+}
+
+function SecondaryButton({ label, onClick, tweak }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        width:'100%', padding:'15px',
+        background:'transparent',
+        border:`1.5px solid oklch(${hover ? '0.35' : '0.26'} 0.01 240)`,
+        borderRadius: tweak.roundness + 'px',
+        color:`oklch(${hover ? '0.80' : '0.65'} 0.01 240)`,
+        fontFamily:'Outfit, sans-serif', fontSize:'15px', fontWeight:'600',
+        cursor:'pointer', letterSpacing:'0.06em',
+        transition:'all 0.2s ease',
+      }}
+    >{label}</button>
+  );
+}
+
+/* ─── APP SHELL ─────────────────────────────────────────── */
+function App() {
+  const [tweak, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [screen, setScreen] = useState('home');
+  const [gameConfig, setGameConfig] = useState(null);
+
+  function handlePlay() { setScreen('themes'); }
+  function handleStartGame(config) { setGameConfig(config); setScreen('game'); }
+  function handleBack() { setScreen('home'); }
+
+  return (
+    <>
+      <div className="scene">
+        <IOSDevice dark={true}>
+          <div style={{ width:'100%', height:'100%', position:'relative' }}>
+            {screen === 'home' && (
+              <HomeScreen
+                onPlay={handlePlay}
+                onHowTo={() => setScreen('howto')}
+                tweak={tweak}
+              />
+            )}
+            {screen === 'themes' && (
+              <ThemeSelectScreen
+                onBack={handleBack}
+                onPlay={handleStartGame}
+                tweak={tweak}
+              />
+            )}
+            {screen === 'game' && (
+              <GameScreen
+                onBack={() => setScreen('themes')}
+                config={gameConfig}
+                tweak={tweak}
+              />
+            )}
+            {screen === 'howto' && (
+              <HowToScreen onBack={handleBack} tweak={tweak} />
+            )}
+          </div>
+        </IOSDevice>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="Colores de grupo">
+          <TweakColor label="Verde"    value={tweak.accentGreen}  onChange={v => setTweak('accentGreen', v)} />
+          <TweakColor label="Azul"     value={tweak.accentBlue}   onChange={v => setTweak('accentBlue', v)} />
+          <TweakColor label="Amarillo" value={tweak.accentYellow} onChange={v => setTweak('accentYellow', v)} />
+          <TweakColor label="Rojo"     value={tweak.accentRed}    onChange={v => setTweak('accentRed', v)} />
+          <TweakColor label="Fondo"    value={tweak.bgColor}      onChange={v => setTweak('bgColor', v)} />
+        </TweakSection>
+        <TweakSection label="Tipografía">
+          <TweakSelect
+            label="Fuente logo"
+            value={tweak.fontDisplay}
+            options={[
+              {label:'Outfit', value:'Outfit'},
+              {label:'DM Sans', value:'DM Sans'},
+              {label:'Georgia', value:'Georgia'},
+              {label:'Impact', value:'Impact'},
+            ]}
+            onChange={v => setTweak('fontDisplay', v)}
+          />
+        </TweakSection>
+        <TweakSection label="Forma">
+          <TweakSlider
+            label="Redondez"
+            value={parseInt(tweak.roundness)}
+            min={6} max={28} step={2}
+            onChange={v => setTweak('roundness', String(v))}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<style>
+@keyframes shakeGrid {
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-6px)}
+  30%{transform:translateX(6px)}
+  45%{transform:translateX(-5px)}
+  60%{transform:translateX(5px)}
+  75%{transform:translateX(-3px)}
+  90%{transform:translateX(3px)}
+}
+@keyframes popIn {
+  0%{transform:scale(0.92) translateY(4px); opacity:0}
+  100%{transform:scale(1) translateY(0); opacity:1}
+}
+@keyframes fadeIn {
+  from{opacity:0} to{opacity:1}
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: oklch(0.28 0.01 240); border-radius: 4px; }
+</style>
+</html>

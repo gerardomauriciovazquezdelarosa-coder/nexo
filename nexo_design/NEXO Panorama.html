@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXO — Todas las Pantallas</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; font-family:'Outfit',sans-serif; }
+</style>
+</head>
+<body>
+<div id="root" style="width:100%;height:100vh;"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/* ── Design tokens ── */
+const C = {
+  bg:      '#0a0a0f',
+  surface: '#111827',
+  border:  '#1f2937',
+  border2: '#1a1f2e',
+  muted:   '#374151',
+  dim:     '#4b5563',
+  mid:     '#6b7280',
+  text:    '#d1d5db',
+  white:   '#ffffff',
+  green:   '#3ecf6e',
+  blue:    '#4d9eff',
+  yellow:  '#f5d547',
+  red:     '#f05a40',
+};
+const R = 16; // border radius
+
+/* ── Shared micro-components ── */
+function NexoLogo({ size=20 }) {
+  return (
+    <div style={{ display:'flex', gap:'1px' }}>
+      {['N','E','X','O'].map((l,i) => (
+        <span key={l} style={{
+          fontSize: size+'px', fontWeight:900, letterSpacing:'-1px',
+          color: [C.green,C.blue,C.yellow,C.red][i],
+          textShadow:`0 0 ${size*0.6}px ${[C.green,C.blue,C.yellow,C.red][i]}88`,
+          lineHeight:1,
+        }}>{l}</span>
+      ))}
+    </div>
+  );
+}
+
+function Divider() {
+  return <div style={{ height:'1px', background:C.border, margin:'0 16px' }}/>;
+}
+
+function BackBtn({ label='' }) {
+  return (
+    <button style={{
+      background:'none', border:'none', cursor:'pointer',
+      color:C.mid, fontSize:'20px', padding:'4px',
+      display:'flex', alignItems:'center', gap:'4px',
+      fontFamily:'Outfit,sans-serif', fontWeight:600, fontSize:'13px', color:C.dim,
+    }}>← {label}</button>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   SCREEN 1 — HOME
+═══════════════════════════════════════════════════ */
+function ScreenHome() {
+  const colors = [C.green, C.blue, C.yellow, C.red];
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.bg, display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'space-between', padding:'0 0 32px', overflow:'hidden', position:'relative' }}>
+
+      {/* Ambient glow */}
+      <div style={{ position:'absolute', top:'-40px', left:'50%', transform:'translateX(-50%)',
+        width:'300px', height:'300px',
+        background:`radial-gradient(ellipse, ${C.blue}25 0%, ${C.green}12 40%, transparent 70%)`,
+        filter:'blur(28px)', pointerEvents:'none' }}/>
+
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', paddingTop:'56px', flex:1, justifyContent:'center', gap:0 }}>
+        {/* Color bars */}
+        <div style={{ display:'flex', gap:'6px', marginBottom:'24px' }}>
+          {colors.map((c,i) => (
+            <div key={i} style={{ width:'24px', height:'4px', background:c, borderRadius:'4px', boxShadow:`0 0 8px ${c}` }}/>
+          ))}
+        </div>
+
+        {/* Logo */}
+        <div style={{ display:'flex', gap:'1px', marginBottom:'8px' }}>
+          {['N','E','X','O'].map((l,i) => (
+            <div key={l} style={{
+              fontSize:'80px', fontWeight:900, color:colors[i], lineHeight:1, letterSpacing:'-2px',
+              textShadow:`0 0 36px ${colors[i]}88, 0 0 70px ${colors[i]}44`,
+            }}>{l}</div>
+          ))}
+        </div>
+
+        {/* Tagline */}
+        <p style={{ fontSize:'13px', fontFamily:'DM Sans,sans-serif', fontWeight:300,
+          color:'#9ca3af', letterSpacing:'0.04em', lineHeight:1.5, textAlign:'center', padding:'0 20px' }}>
+          Conecta los conceptos.<br/>
+          <span style={{ fontStyle:'italic', color:'#d1d5db' }}>Desafía tu mente.</span>
+        </p>
+
+        {/* Preview grid */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px',
+          marginTop:'28px', width:'200px' }}>
+          {[0,1,2,3].map(row => [0,1,2,3].map(col => (
+            <div key={`${row}-${col}`} style={{
+              height:'14px', borderRadius:'4px',
+              background: col===row ? colors[row] : `${colors[row]}28`,
+              boxShadow: col===row ? `0 0 6px ${colors[row]}88` : 'none',
+            }}/>
+          )))}
+        </div>
+
+        {/* Stats */}
+        <div style={{ display:'flex', gap:'20px', marginTop:'24px' }}>
+          {[['12K+','Jugadores'],['500+','Puzzles'],['4','Niveles']].map(([v,l]) => (
+            <div key={l} style={{ textAlign:'center' }}>
+              <div style={{ fontSize:'17px', fontWeight:700, color:'white' }}>{v}</div>
+              <div style={{ fontSize:'9px', color:C.dim, fontFamily:'DM Sans,sans-serif', marginTop:'2px', letterSpacing:'0.06em' }}>{l.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div style={{ width:'100%', padding:'0 22px', display:'flex', flexDirection:'column', gap:'9px' }}>
+        <button style={{
+          width:'100%', padding:'15px', border:'none', borderRadius:R+'px', cursor:'pointer',
+          background:`linear-gradient(135deg,${C.green},${C.blue})`,
+          color:'white', fontFamily:'Outfit,sans-serif', fontSize:'14px', fontWeight:800,
+          letterSpacing:'0.06em', boxShadow:`0 4px 20px ${C.green}44`,
+        }}>Jugar ahora</button>
+        <button style={{
+          width:'100%', padding:'14px', background:'transparent', cursor:'pointer',
+          border:'1.5px solid #374151', borderRadius:R+'px',
+          color:C.mid, fontFamily:'Outfit,sans-serif', fontSize:'14px', fontWeight:600, letterSpacing:'0.06em',
+        }}>Cómo jugar</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   SCREEN 2 — THEME SELECTION
+═══════════════════════════════════════════════════ */
+const THEMES = [
+  { emoji:'🏛️', label:'Historia',    desc:'Hechos y personajes históricos' },
+  { emoji:'🎨', label:'Arte',        desc:'Movimientos, obras y artistas' },
+  { emoji:'📖', label:'Literatura',  desc:'Autores, obras y personajes' },
+  { emoji:'➗', label:'Matemáticas', desc:'Conceptos y teorías matemáticas' },
+  { emoji:'🔬', label:'Ciencia',     desc:'Biología, física y química' },
+  { emoji:'🌍', label:'Geografía',   desc:'Países, capitales y accidentes' },
+  { emoji:'⚽', label:'Deportes',    desc:'Atletas, equipos y disciplinas' },
+];
+
+const DIFFS = [
+  { label:'Fácil',   color:C.green,  icon:'◐' },
+  { label:'Medio',   color:C.yellow, icon:'◑' },
+  { label:'Difícil', color:C.red,    icon:'●' },
+];
+
+function ScreenThemes() {
+  const [selTheme, setSelTheme] = useState(0);
+  const [selDiff,  setSelDiff]  = useState(0);
+  const activeColor = DIFFS[selDiff].color;
+
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.bg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px 16px 10px' }}>
+        <BackBtn/>
+        <div>
+          <div style={{ fontSize:'17px', fontWeight:800, color:'white', lineHeight:1.1 }}>Elige tu desafío</div>
+          <div style={{ fontSize:'10px', color:C.dim, fontFamily:'DM Sans,sans-serif', marginTop:'2px' }}>Tema y dificultad</div>
+        </div>
+      </div>
+      <Divider/>
+
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 14px 0' }}>
+
+        {/* Difficulty */}
+        <p style={{ fontSize:'9px', fontWeight:700, letterSpacing:'0.10em', color:C.muted, marginBottom:'7px' }}>DIFICULTAD</p>
+        <div style={{ display:'flex', gap:'5px', marginBottom:'16px' }}>
+          {DIFFS.map((d,i) => {
+            const on = selDiff===i;
+            return (
+              <button key={d.label} onClick={() => setSelDiff(i)} style={{
+                flex:1, padding:'9px 4px', cursor:'pointer',
+                background: on ? `${d.color}1a` : C.surface,
+                border:`1.5px solid ${on ? d.color : C.border}`,
+                borderRadius:R+'px',
+                display:'flex', flexDirection:'column', alignItems:'center', gap:'3px',
+              }}>
+                <div style={{
+                  width:'26px', height:'26px', borderRadius:'8px',
+                  background: on ? `${d.color}33` : C.border,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:'13px', color: on ? d.color : C.dim, fontWeight:900,
+                }}>{d.icon}</div>
+                <span style={{ fontSize:'10px', fontWeight:700, color: on ? d.color : C.mid }}>{d.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Categories */}
+        <p style={{ fontSize:'9px', fontWeight:700, letterSpacing:'0.10em', color:C.muted, marginBottom:'7px' }}>CATEGORÍA</p>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6px', paddingBottom:'12px' }}>
+          {THEMES.map((t,i) => {
+            const on = selTheme===i;
+            return (
+              <button key={t.label} onClick={() => setSelTheme(i)} style={{
+                background: on ? `${activeColor}18` : '#0f1117',
+                border:`1.5px solid ${on ? activeColor : C.border2}`,
+                borderRadius:R+'px', padding:'11px 10px',
+                cursor:'pointer', display:'flex', flexDirection:'column',
+                alignItems:'flex-start', gap:'5px', textAlign:'left',
+                position:'relative', overflow:'hidden',
+              }}>
+                {on && <div style={{
+                  position:'absolute', top:'-16px', right:'-16px',
+                  width:'60px', height:'60px',
+                  background:`${activeColor}22`, borderRadius:'50%', filter:'blur(14px)',
+                  pointerEvents:'none',
+                }}/>}
+                <div style={{ fontSize:'22px', lineHeight:1 }}>{t.emoji}</div>
+                <div>
+                  <div style={{ fontSize:'12px', fontWeight:700, color: on ? activeColor : 'white' }}>{t.label}</div>
+                  <div style={{ fontSize:'9px', color:C.muted, fontFamily:'DM Sans,sans-serif', marginTop:'2px', lineHeight:1.3 }}>{t.desc}</div>
+                </div>
+                {on && <div style={{
+                  position:'absolute', top:'7px', right:'7px',
+                  width:'15px', height:'15px', borderRadius:'50%',
+                  background:activeColor, display:'flex', alignItems:'center',
+                  justifyContent:'center', fontSize:'8px', color:'#000', fontWeight:900,
+                }}>✓</div>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding:'10px 14px 26px', display:'flex', flexDirection:'column', gap:'7px' }}>
+        <div style={{
+          display:'flex', alignItems:'center', gap:'8px',
+          padding:'7px 10px',
+          background:`${activeColor}18`, border:`1px solid ${activeColor}33`,
+          borderRadius:R+'px',
+        }}>
+          <span style={{ fontSize:'16px' }}>{THEMES[selTheme].emoji}</span>
+          <div>
+            <div style={{ fontSize:'11px', fontWeight:700, color:'white' }}>{THEMES[selTheme].label} · {DIFFS[selDiff].label}</div>
+            <div style={{ fontSize:'9px', color:C.dim, fontFamily:'DM Sans,sans-serif' }}>16 palabras · 4 grupos ocultos</div>
+          </div>
+        </div>
+        <button style={{
+          width:'100%', padding:'13px', border:'none', borderRadius:R+'px', cursor:'pointer',
+          background:`linear-gradient(135deg,${activeColor},${C.blue})`,
+          color:'white', fontFamily:'Outfit,sans-serif', fontSize:'13px', fontWeight:800,
+          letterSpacing:'0.06em', boxShadow:`0 4px 20px ${activeColor}44`,
+        }}>COMENZAR PUZZLE →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   SCREEN 3 — PUZZLE IN GAME (mid-play state)
+═══════════════════════════════════════════════════ */
+const SOLVED_GROUPS = [
+  { theme:'Capitales de América del Sur', color:C.green,  words:'LIMA · BOGOTÁ · QUITO · CARACAS' },
+];
+const REMAINING = ['MARTE','QUIJOTE','VIOLÍN','VENUS','NOVELAS','ARPA','SATURNO','GALATEA','LAÚD','JÚPITER','PERSILES','CÍTARA'];
+const SELECTED  = ['MARTE','VENUS','SATURNO'];
+const HINTED    = ['JÚPITER'];
+
+function ScreenGame() {
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.bg, display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
+
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 14px 8px' }}>
+        <BackBtn/>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+          <NexoLogo size={19}/>
+          <div style={{
+            display:'flex', alignItems:'center', gap:'4px',
+            background:`${C.green}18`, border:`1px solid ${C.green}33`,
+            borderRadius:'8px', padding:'1px 7px',
+          }}>
+            <span style={{ fontSize:'9px' }}>🏛️</span>
+            <span style={{ fontSize:'9px', fontWeight:700, color:C.green, letterSpacing:'0.04em' }}>Historia · Fácil</span>
+          </div>
+        </div>
+        {/* Hint button */}
+        <div style={{
+          background:`${C.yellow}22`, border:`1.5px solid ${C.yellow}55`,
+          borderRadius:'10px', padding:'5px 7px',
+          display:'flex', flexDirection:'column', alignItems:'center', gap:'1px',
+        }}>
+          <span style={{ fontSize:'13px', lineHeight:1 }}>💡</span>
+          <span style={{ fontSize:'8px', fontWeight:700, color:C.yellow, letterSpacing:'0.04em' }}>2/3</span>
+        </div>
+      </div>
+
+      <Divider/>
+
+      {/* Attempts */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'7px 14px 5px' }}>
+        <span style={{ fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', color:C.muted }}>INTENTOS</span>
+        <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              width:'22px', height:'7px', borderRadius:'4px',
+              background: i < 1 ? C.red+'cc' : C.border,
+              boxShadow: i < 1 ? `0 0 5px ${C.red}88` : 'none',
+            }}/>
+          ))}
+          <span style={{ fontSize:'9px', fontWeight:700, color:C.mid, marginLeft:'3px' }}>3 left</span>
+        </div>
+      </div>
+
+      {/* Solved group */}
+      <div style={{ padding:'0 11px', display:'flex', flexDirection:'column', gap:'5px' }}>
+        {SOLVED_GROUPS.map((g,i) => (
+          <div key={i} style={{
+            borderRadius:R+'px',
+            background:`linear-gradient(135deg,${g.color},${g.color}cc)`,
+            padding:'7px 11px',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+          }}>
+            <div>
+              <span style={{ fontSize:'9px', fontWeight:800, color:'rgba(0,0,0,0.55)', letterSpacing:'0.07em', display:'block' }}>
+                {g.theme.toUpperCase()}
+              </span>
+              <span style={{ fontSize:'11px', fontWeight:600, color:'rgba(0,0,0,0.80)' }}>{g.words}</span>
+            </div>
+            <div style={{
+              width:'18px', height:'18px', borderRadius:'50%',
+              background:'rgba(0,0,0,0.15)', display:'flex', alignItems:'center',
+              justifyContent:'center', fontSize:'9px', color:'rgba(0,0,0,0.6)',
+            }}>✓</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Word grid label */}
+      <p style={{ fontSize:'9px', fontWeight:700, letterSpacing:'0.08em', color:C.muted,
+        padding:'7px 14px 4px', textAlign:'center' }}>
+        ENCUENTRA GRUPOS DE CUATRO CONCEPTOS
+      </p>
+
+      {/* Grid */}
+      <div style={{ flex:1, padding:'0 11px', overflow:'hidden' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'5px' }}>
+          {REMAINING.map(word => {
+            const isSel  = SELECTED.includes(word);
+            const isHint = HINTED.includes(word);
+            return (
+              <div key={word} style={{
+                background: isSel ? `${C.blue}2a` : isHint ? `${C.yellow}15` : '#111827',
+                border:`1.5px solid ${isSel ? C.blue : isHint ? C.yellow+'66' : C.border}`,
+                borderRadius:'11px', padding:'7px 2px',
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                gap:'2px', minHeight:'42px',
+                fontFamily:'Outfit,sans-serif', fontSize:'9px', fontWeight:800,
+                color: isSel ? 'white' : isHint ? C.yellow : C.text,
+                letterSpacing:'0.04em',
+                boxShadow: isSel ? `0 0 0 1px ${C.blue}, 0 3px 12px ${C.blue}33` : 'none',
+              }}>
+                {isHint && <span style={{ fontSize:'7px', opacity:0.6 }}>💡</span>}
+                {word}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div style={{ padding:'7px 11px 22px', display:'flex', flexDirection:'column', gap:'6px' }}>
+        <div style={{ display:'flex', gap:'6px' }}>
+          {['⇄ Mezclar','✕ Limpiar'].map(l => (
+            <button key={l} style={{
+              flex:1, padding:'9px', background:'transparent',
+              border:`1.5px solid ${C.border}`, borderRadius:R+'px',
+              color:C.dim, fontFamily:'Outfit,sans-serif', fontSize:'11px', fontWeight:600,
+              cursor:'pointer', letterSpacing:'0.03em',
+            }}>{l}</button>
+          ))}
+        </div>
+        <button style={{
+          width:'100%', padding:'12px', border:'none', borderRadius:R+'px', cursor:'pointer',
+          background:`linear-gradient(135deg,${C.green},${C.blue})`,
+          color:'white', fontFamily:'Outfit,sans-serif', fontSize:'12px', fontWeight:800,
+          letterSpacing:'0.06em', boxShadow:`0 4px 20px ${C.green}44`,
+        }}>CONFIRMAR →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   SCREEN 4 — VICTORY
+═══════════════════════════════════════════════════ */
+function ScreenWin() {
+  const colors = [C.green, C.blue, C.yellow, C.red];
+  const solved = [
+    { theme:'Capitales de América del Sur', color:C.green,  words:'LIMA · BOGOTÁ · QUITO · CARACAS' },
+    { theme:'Planetas del Sistema Solar',   color:C.blue,   words:'MARTE · VENUS · SATURNO · JÚPITER' },
+    { theme:'Obras de Cervantes',           color:C.yellow, words:'QUIJOTE · NOVELAS · GALATEA · PERSILES' },
+    { theme:'Instrumentos de cuerda',       color:C.red,    words:'VIOLÍN · ARPA · LAÚD · CÍTARA' },
+  ];
+
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.bg, display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center', gap:'10px', padding:'20px 16px', position:'relative', overflow:'hidden' }}>
+
+      {/* Ambient glow */}
+      <div style={{ position:'absolute', top:'5%', left:'50%', transform:'translateX(-50%)',
+        width:'260px', height:'260px',
+        background:`radial-gradient(ellipse, ${C.green}22 0%, ${C.blue}12 50%, transparent 70%)`,
+        filter:'blur(30px)', pointerEvents:'none' }}/>
+
+      <div style={{ fontSize:'44px' }}>🏆</div>
+
+      <NexoLogo size={42}/>
+
+      <div style={{ textAlign:'center' }}>
+        <p style={{ color:'white', fontWeight:800, fontSize:'17px', marginBottom:'4px' }}>¡Puzzle resuelto!</p>
+        <div style={{
+          display:'inline-flex', alignItems:'center', gap:'5px',
+          background:C.surface, border:`1px solid ${C.border}`,
+          borderRadius:'10px', padding:'3px 10px',
+        }}>
+          <span style={{ fontSize:'11px' }}>🏛️</span>
+          <span style={{ fontSize:'10px', color:C.mid, fontFamily:'DM Sans,sans-serif' }}>Historia · Fácil</span>
+        </div>
+      </div>
+
+      {/* Solved groups recap */}
+      <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:'4px' }}>
+        {solved.map((g,i) => (
+          <div key={i} style={{
+            borderRadius:'12px',
+            background:`linear-gradient(135deg,${g.color},${g.color}bb)`,
+            padding:'6px 10px',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize:'8px', fontWeight:800, color:'rgba(0,0,0,0.5)', letterSpacing:'0.07em' }}>{g.theme.toUpperCase()}</div>
+              <div style={{ fontSize:'10px', fontWeight:600, color:'rgba(0,0,0,0.78)' }}>{g.words}</div>
+            </div>
+            <div style={{
+              width:'16px', height:'16px', borderRadius:'50%',
+              background:'rgba(0,0,0,0.15)', display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:'8px',
+            }}>✓</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Score */}
+      <div style={{
+        display:'flex', gap:'14px', padding:'10px 16px',
+        background:C.surface, border:`1px solid ${C.border}`,
+        borderRadius:R+'px', width:'100%',
+      }}>
+        {[['4','Grupos'],['16','Palabras'],['✓','Completo']].map(([v,l]) => (
+          <div key={l} style={{ flex:1, textAlign:'center' }}>
+            <div style={{ fontSize:'18px', fontWeight:800, color:'white' }}>{v}</div>
+            <div style={{ fontSize:'8px', color:C.muted, fontFamily:'DM Sans,sans-serif', letterSpacing:'0.06em', marginTop:'1px' }}>{l.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', gap:'7px', width:'100%' }}>
+        <button style={{
+          flex:1, padding:'11px', background:'transparent',
+          border:`1.5px solid ${C.border}`, borderRadius:R+'px',
+          color:C.mid, fontFamily:'Outfit,sans-serif', fontSize:'11px', fontWeight:700, cursor:'pointer',
+        }}>← Inicio</button>
+        <button style={{
+          flex:2, padding:'11px', border:'none', borderRadius:R+'px', cursor:'pointer',
+          background:`linear-gradient(135deg,${C.green},${C.blue})`,
+          color:'white', fontFamily:'Outfit,sans-serif', fontSize:'11px', fontWeight:800,
+          letterSpacing:'0.05em', boxShadow:`0 4px 18px ${C.green}44`,
+        }}>Otro puzzle →</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   SCREEN 5 — HOW TO PLAY
+═══════════════════════════════════════════════════ */
+function ScreenHowTo() {
+  const steps = [
+    { icon:'◉', color:C.blue,   title:'Lee las 16 palabras',      desc:'Verás una cuadrícula con 16 conceptos mezclados.' },
+    { icon:'◈', color:C.green,  title:'Encuentra los 4 grupos',   desc:'Cada grupo comparte tema, categoría o patrón.' },
+    { icon:'◆', color:C.yellow, title:'Selecciona y confirma',    desc:'Toca 4 palabras y presiona CONFIRMAR.' },
+    { icon:'★', color:C.red,    title:'Solo 4 errores permitidos',desc:'Si fallas 4 veces, el puzzle se revela.' },
+  ];
+  const diffColors = [C.green, C.blue, C.yellow, C.red];
+  const diffLabels = ['Más fácil', 'Fácil', 'Difícil', 'Muy difícil'];
+
+  return (
+    <div style={{ width:'100%', height:'100%', background:C.bg, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'14px 16px 10px' }}>
+        <BackBtn/>
+        <h1 style={{ fontSize:'17px', fontWeight:800, color:'white' }}>Cómo jugar</h1>
+      </div>
+      <Divider/>
+
+      <div style={{ flex:1, overflowY:'auto', padding:'14px 16px 20px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'9px', marginBottom:'18px' }}>
+          {steps.map((s,i) => (
+            <div key={i} style={{
+              display:'flex', gap:'11px', alignItems:'flex-start',
+              background:'#0f1117', borderRadius:R+'px',
+              padding:'12px 13px', border:`1px solid ${C.border}`,
+            }}>
+              <div style={{
+                width:'32px', height:'32px', borderRadius:'9px', flexShrink:0,
+                background:`${s.color}22`, border:`1.5px solid ${s.color}55`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:'14px', color:s.color,
+              }}>{s.icon}</div>
+              <div>
+                <div style={{ fontSize:'12px', fontWeight:700, color:'white', marginBottom:'3px' }}>{s.title}</div>
+                <div style={{ fontSize:'11px', color:C.dim, fontFamily:'DM Sans,sans-serif', lineHeight:1.5 }}>{s.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background:'#0a0d14', borderRadius:R+'px', padding:'13px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
+          <p style={{ fontSize:'9px', fontWeight:700, color:C.muted, letterSpacing:'0.08em', marginBottom:'10px' }}>DIFICULTAD DE GRUPOS</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+            {diffColors.map((col,i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'9px' }}>
+                <div style={{ width:'24px', height:'9px', borderRadius:'4px', background:col, boxShadow:`0 0 6px ${col}88`, flexShrink:0 }}/>
+                <span style={{ fontSize:'11px', fontFamily:'DM Sans,sans-serif', color:C.mid }}>{diffLabels[i]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{
+          background:`${C.yellow}11`, border:`1px solid ${C.yellow}33`,
+          borderRadius:R+'px', padding:'10px 12px',
+        }}>
+          <p style={{ fontSize:'11px', fontFamily:'DM Sans,sans-serif', color:C.yellow, fontWeight:500, lineHeight:1.5 }}>
+            💡 <strong>Consejo:</strong> Cuidado con las palabras trampa que parecen pertenecer a dos grupos diferentes.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ padding:'0 16px 26px' }}>
+        <button style={{
+          width:'100%', padding:'13px', border:'none', borderRadius:R+'px', cursor:'pointer',
+          background:`linear-gradient(135deg,${C.green},${C.blue})`,
+          color:'white', fontFamily:'Outfit,sans-serif', fontSize:'13px', fontWeight:800,
+          letterSpacing:'0.06em', boxShadow:`0 4px 18px ${C.green}44`,
+        }}>¡Entendido, jugar!</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   PHONE WRAPPER
+═══════════════════════════════════════════════════ */
+function Phone({ children, label }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'12px' }}>
+      <IOSDevice dark={true} width={320} height={693}>
+        {children}
+      </IOSDevice>
+      <div style={{
+        background:'rgba(255,255,255,0.07)', backdropFilter:'blur(6px)',
+        border:'1px solid rgba(255,255,255,0.10)',
+        borderRadius:'20px', padding:'5px 14px',
+        fontSize:'12px', fontWeight:600, color:'rgba(255,255,255,0.55)',
+        fontFamily:'DM Sans,sans-serif', letterSpacing:'0.04em',
+      }}>{label}</div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════════════ */
+function App() {
+  const screens = [
+    { id:'home',   label:'01 — Inicio',          Component: ScreenHome   },
+    { id:'themes', label:'02 — Selección de tema', Component: ScreenThemes },
+    { id:'game',   label:'03 — Puzzle en juego',  Component: ScreenGame   },
+    { id:'win',    label:'04 — Victoria',          Component: ScreenWin    },
+    { id:'howto',  label:'05 — Cómo jugar',       Component: ScreenHowTo  },
+  ];
+
+  return (
+    <DesignCanvas>
+      <DCSection id="all" title="NEXO — Flujo completo de pantallas" subtitle="5 pantallas · Diseño oscuro premium · Navegación interactiva">
+        {screens.map(({ id, label, Component }) => (
+          <DCArtboard key={id} id={id} label={label} width={320} height={693}>
+            <Component/>
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,109 +1,67 @@
 "use client";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
-const CATEGORIAS = [
-  { nombre: "🏛️ Historia", subtemas: ["Historia de México"] },
-  { nombre: "🎨 Arte", subtemas: ["Arte"] },
-  { nombre: "📖 Literatura", subtemas: ["Literatura Universal"] },
-  { nombre: "🧮 Matemáticas", subtemas: ["Matemáticas"] },
-  { nombre: "🔭 Ciencia", subtemas: ["Ciencia"] },
-  { nombre: "🌎 Geografía", subtemas: ["Geografía"] },
-  { nombre: "⚽ Deportes", subtemas: ["Deportes"] },
-  { nombre: "🧠 Filosofía", subtemas: ["Filosofía"] },
-  { nombre: "🔧 Herramientas", subtemas: ["Herramientas"] },
-  { nombre: "🎭 Personajes ficticios", subtemas: ["Personajes ficticios"] },
-  { nombre: "🏆 Historia de los Mundiales", subtemas: ["Historia de los Mundiales"] },
-  { nombre: "⚽ Mundial 2026", subtemas: ["Mundial 2026"] },
-];
-
-const DIFICULTADES = [
-  { id: "fácil", label: "Fácil", emoji: "⚪", descripcion: "Para niños" },
-  { id: "medio", label: "Medio", emoji: "🔵", descripcion: "Cultura general" },
-  { id: "difícil", label: "Difícil", emoji: "🟣", descripcion: "Para expertos" },
-];
-
-export default function Jugar() {
+export default function Home() {
   const router = useRouter();
-  const [temaSeleccionado, setTemaSeleccionado] = useState("");
-  const [dificultad, setDificultad] = useState("fácil");
-  const [categoriaAbierta, setCategoriaAbierta] = useState<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleJugar = () => {
-    if (!temaSeleccionado) return;
-    const params = new URLSearchParams({ tema: temaSeleccionado, dificultad });
-    router.push("/partida?" + params.toString());
-  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  return (
-    <main className="min-h-screen bg-gray-950 text-white p-4">
-      <div className="max-w-md mx-auto">
-        <div className="flex items-center gap-3 mb-8 pt-4">
-          <button onClick={() => router.push("/")} className="text-gray-400 hover:text-white">←</button>
-          <h1 className="text-2xl font-bold">Elige un tema</h1>
-        </div>
-        <div className="mb-6">
-          <label className="text-gray-400 text-sm mb-3 block">Categorías:</label>
-          <div className="space-y-2">
-            {CATEGORIAS.map((cat, i) => (
-              <div key={i}>
-                <button
-                  onClick={() => setCategoriaAbierta(categoriaAbierta === i ? null : i)}
-                  className="w-full text-left bg-gray-800 hover:bg-gray-700 rounded-xl px-4 py-3 transition flex justify-between items-center"
-                >
-                  <span>{cat.nombre}</span>
-                  <span className="text-gray-400">{categoriaAbierta === i ? "▲" : "▼"}</span>
-                </button>
-                {categoriaAbierta === i && (
-                  <div className="mt-1 ml-4 space-y-1">
-                    {cat.subtemas.map((sub, j) => (
-                      <button
-                        key={j}
-                        onClick={() => setTemaSeleccionado(sub)}
-                        className={"w-full text-left px-4 py-2 rounded-lg transition text-sm " +
-                          (temaSeleccionado === sub
-                            ? "bg-white text-gray-950 font-semibold"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300")}
-                      >
-                        {sub}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mb-8">
-          <label className="text-gray-400 text-sm mb-3 block">Dificultad:</label>
-          <div className="grid grid-cols-3 gap-2">
-            {DIFICULTADES.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setDificultad(d.id)}
-                className={"py-3 rounded-xl text-center transition " +
-                  (dificultad === d.id
-                    ? "bg-white text-gray-950 font-semibold"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700")}
-              >
-                <div>{d.emoji}</div>
-                <div className="text-sm font-medium">{d.label}</div>
-                <div className="text-xs opacity-60">{d.descripcion}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-        <button
-          onClick={handleJugar}
-          disabled={!temaSeleccionado}
-          className={"w-full py-4 rounded-2xl font-semibold text-lg transition " +
-            (temaSeleccionado
-              ? "bg-white text-gray-950 hover:bg-gray-100"
-              : "bg-gray-800 text-gray-600 cursor-not-allowed")}
-        >
-          {temaSeleccionado ? "▶ Jugar: " + temaSeleccionado : "Elige un tema para continuar"}
-        </button>
-      </div>
-    </main>
-  );
-}
+    let angle = 0;
+    let goalOpacity = 0;
+    let goalPhase = 0;
+    let frame = 0;
+
+    const colors = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
+
+    function drawBall() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = 55;
+
+      // Sombra
+      ctx.shadowColor = "rgba(255,255,255,0.1)";
+      ctx.shadowBlur = 20;
+
+      // Fondo blanco del balón
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = "#f8f8f8";
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Pentágonos de colores
+      const patches = [
+        { a: angle, d: 0 },
+        { a: angle + Math.PI * 0.4, d: r * 0.5 },
+        { a: angle + Math.PI * 0.8, d: r * 0.5 },
+        { a: angle + Math.PI * 1.2, d: r * 0.5 },
+        { a: angle + Math.PI * 1.6, d: r * 0.5 },
+        { a: angle + Math.PI * 0.2, d: r * 0.85 },
+        { a: angle + Math.PI * 0.6, d: r * 0.85 },
+        { a: angle + Math.PI * 1.0, d: r * 0.85 },
+        { a: angle + Math.PI * 1.4, d: r * 0.85 },
+        { a: angle + Math.PI * 1.8, d: r * 0.85 },
+      ];
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+      ctx.clip();
+
+      patches.forEach((p, i) => {
+        const px = cx + Math.cos(p.a) * p.d;
+        const py = cy + Math.sin(p.a) * p.d;
+        const pr = r * 0.28;
+        ctx.beginPath();
+        for (let k = 0; k < 5; k++) {
+          const a = (k * Math.PI * 2) / 5 - Math.PI / 2 + p.a * 0.3;
+          const x = px +
