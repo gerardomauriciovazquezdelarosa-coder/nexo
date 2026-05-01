@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const CATEGORIAS = [
+  { nombre: "Mundial 2026", emoji: "⚽", desc: "Jugadores y selecciones" },
+  { nombre: "Historia de los Mundiales", emoji: "🏆", desc: "Goles, campeones y récords" },
   { nombre: "Historia de México", emoji: "🏛️", desc: "Hechos y personajes históricos" },
   { nombre: "Arte", emoji: "🎨", desc: "Movimientos, obras y artistas" },
   { nombre: "Literatura Universal", emoji: "📖", desc: "Autores, obras y personajes" },
@@ -13,8 +15,6 @@ const CATEGORIAS = [
   { nombre: "Filosofía", emoji: "🧠", desc: "Pensadores y corrientes" },
   { nombre: "Herramientas", emoji: "🔧", desc: "Instrumentos y utensilios" },
   { nombre: "Personajes ficticios", emoji: "🎭", desc: "Literatura, cine y series" },
-  { nombre: "Historia de los Mundiales", emoji: "🏆", desc: "Goles, campeones y récords" },
-  { nombre: "Mundial 2026", emoji: "⚽", desc: "Jugadores y selecciones" },
 ];
 
 const DIFICULTADES = [
