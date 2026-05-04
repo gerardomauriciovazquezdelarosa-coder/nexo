@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 const MENSAJES_CARGA = [
   { emoji: "🔍", texto: "Buscando tu puzzle..." },
@@ -53,13 +55,23 @@ function PartidaContent() {
     setPuzzle(null);
     setPalabras([]);
     try {
-      const res = await fetch("/api/generar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tema, dificultad }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const { data: filas, error: dbError } = await supabase
+          .from('puzzles')
+          .select('*')
+          .eq('tema', tema)
+          .eq('nivel', dificultad);
+        if (dbError) throw new Error(dbError.message);
+        if (!filas || filas.length < 4) throw new Error('No hay suficientes puzzles');
+        const mezcladas = filas.sort(() => Math.random() - 0.5).slice(0, 4);
+        const colores = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+        const emojis = ['🟢', '🔵', '🟡', '🔴'];
+        const grupos = mezcladas.map((fila: any, i: number) => ({
+          categoria: fila.titulo,
+          palabras: [fila.palabra1, fila.palabra2, fila.palabra3, fila.palabra4],
+          color: colores[i],
+          emoji: emojis[i],
+        }));
+        const data = { tema, dificultad, grupos };;
       setPuzzle(data);
       const todas = data.grupos.flatMap((g: any) => g.palabras);
       setPalabras(todas.sort(() => Math.random() - 0.5));
